@@ -15,7 +15,7 @@ copying.*
 glibc-*
 
 configparms
-
+build/
 ieeetest
 regex
 
