@@ -16,14 +16,38 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#include <stdio.h>
 #include <unistd.h>
 #include <sysdep-cancel.h>
+
+#include "Retrace-lib.h"
+
+__thread int retrace_mode = Retrace_Disabled_Mode;
+
 
 /* Read NBYTES into BUF from FD.  Return the number read or -1.  */
 ssize_t
 __libc_read (int fd, void *buf, size_t nbytes)
 {
-  return SYSCALL_CANCEL (read, fd, buf, nbytes);
+
+    if (retrace_mode == Retrace_Disabled_Mode) 
+    {
+        printf("Disabled!\n");
+    } 
+    else if (retrace_mode == Retrace_Read_Mode) 
+    {
+        retrace_mode = Retrace_Disabled_Mode;
+        printf("Read mode!\n");
+
+        retrace_mode = Retrace_Read_Mode;
+    } 
+    else 
+    {
+        retrace_mode = Retrace_Disabled_Mode;
+        
+        retrace_mode = Retrace_Write_Mode;
+    }
+    return SYSCALL_CANCEL (read, fd, buf, nbytes);  
 }
 libc_hidden_def (__libc_read)
 
