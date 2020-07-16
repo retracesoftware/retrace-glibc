@@ -42,6 +42,7 @@ libc {
     # q*
     query_module; quotactl;
 
+    retrace_mode;
     # s*
     setfsgid; setfsuid;
 
