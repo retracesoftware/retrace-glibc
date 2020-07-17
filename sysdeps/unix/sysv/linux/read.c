@@ -20,33 +20,35 @@
 #include <unistd.h>
 #include <sysdep-cancel.h>
 
-#include "Retrace-lib.h"
+#include "../../../retrace/retrace-lib.h"
 
-__thread int retrace_mode = Retrace_Disabled_Mode;
-
+__thread Retrace_Log rlog;
 
 /* Read NBYTES into BUF from FD.  Return the number read or -1.  */
 ssize_t
 __libc_read (int fd, void *buf, size_t nbytes)
 {
-
-    if (retrace_mode == Retrace_Disabled_Mode) 
+    if (rlog.mode == Retrace_Disabled_Mode) 
     {
-        printf("Disabled!\n");
+        printf("Disabled mode!\n");
     } 
-    else if (retrace_mode == Retrace_Read_Mode) 
+    else if (rlog.mode == Retrace_Replay_Mode) 
     {
-        retrace_mode = Retrace_Disabled_Mode;
-        printf("Read mode!\n");
+        rlog.mode = Retrace_Disabled_Mode;
 
-        retrace_mode = Retrace_Read_Mode;
+        printf("Replay mode!\n");
+
+        rlog.mode = Retrace_Replay_Mode;
     } 
-    else 
+    else
     {
-        retrace_mode = Retrace_Disabled_Mode;
+        rlog.mode = Retrace_Disabled_Mode;
         
-        retrace_mode = Retrace_Write_Mode;
+        printf("Record mode!\n");
+
+        rlog.mode = Retrace_Record_Mode;
     }
+
     return SYSCALL_CANCEL (read, fd, buf, nbytes);  
 }
 libc_hidden_def (__libc_read)

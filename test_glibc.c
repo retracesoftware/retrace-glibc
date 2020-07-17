@@ -1,37 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* #define _GNU_SOURCE
-#include <dlfcn.h> */
+#include "retrace/retrace-lib.h"
 
-#include "Retrace-lib.h"
+__thread Retrace_Log rlog;
 
 int main(void)
 {
-    /* void *imglib;
-    
- 
-    imglib = dlopen("./build/install/lib/ld-linux-x86-64.so.2", RTLD_NOW);
+    RLog_Init(&rlog, "log.dat", Retrace_Record_Mode);
 
-    if ( imglib != NULL ) 
-    {
-        void* obj = dlsym(imglib, "retrace_mode");
-
-        int* ptr = (int*)obj;    
-        printf("%d\n", *ptr);
-
-    }
-    else return EXIT_FAILURE;
-
-    if (imglib != NULL ) dlclose(imglib);
-    return EXIT_SUCCESS;
- */
     register int i;
     FILE *fp;
     float balance[100];
      
-    retrace_mode = Retrace_Read_Mode;
-
+    
     if((fp=fopen("balance", "wb"))==NULL) {
     printf("Cannot open file.");
     return 1;
@@ -56,5 +38,8 @@ int main(void)
     for(i=0; i<100; i++) printf("%f  ", balance [i]);
     fclose(fp);
     
+    RLog_Displose(&rlog);
+
+
     return 0;
 }

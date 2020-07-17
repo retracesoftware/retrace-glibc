@@ -42,7 +42,10 @@ libc {
     # q*
     query_module; quotactl;
 
-    retrace_mode;
+    rlog;
+    RLog_Init;
+    RLog_Displose;
+    
     # s*
     setfsgid; setfsuid;
 
