@@ -1,5 +1,6 @@
 
 #include "retrace-lib.h"
+#include <assert.h>
 
 void RLog_Init(Retrace_Log* log, char* path, Retrace_Mode mode)
 {

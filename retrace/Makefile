@@ -23,9 +23,8 @@ subdir	:= retrace
 include ../Makeconfig
 
 headers		= retrace-lib.h
-routines	= retrace-lib retrace
+routines	= retrace-lib 
 
 CFLAGS-retrace-lib.c += -fexceptions
-CFLAGS-retrace.c += -fexceptions
 
 include ../Rules
