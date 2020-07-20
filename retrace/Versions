@@ -1,4 +1,7 @@
 LIBC_2.0 {
+    rlog;
     RLog_Init;
     RLog_Displose;
+    Record_Read;
+    Replay_Read;
 }

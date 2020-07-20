@@ -28,25 +28,21 @@ __thread Retrace_Log rlog;
 ssize_t
 __libc_read (int fd, void *buf, size_t nbytes)
 {
-    if (rlog.mode == Retrace_Disabled_Mode) 
+    if (rlog.mode == Retrace_Record_Mode) 
     {
-        printf("Disabled mode!\n");
+        rlog.mode = Retrace_Disabled_Mode;
+        
+        Record_Read(fd, buf, nbytes);
+
+        rlog.mode = Retrace_Record_Mode;
     } 
     else if (rlog.mode == Retrace_Replay_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
 
-        printf("Replay mode!\n");
+        Replay_Read(fd, buf, nbytes);
 
         rlog.mode = Retrace_Replay_Mode;
-    } 
-    else
-    {
-        rlog.mode = Retrace_Disabled_Mode;
-        
-        printf("Record mode!\n");
-
-        rlog.mode = Retrace_Record_Mode;
     }
 
     return SYSCALL_CANCEL (read, fd, buf, nbytes);  
