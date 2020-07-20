@@ -23,7 +23,9 @@ subdir	:= retrace
 include ../Makeconfig
 
 headers		= retrace-lib.h
-#routines	= getsgent getsgnam sgetsgent fgetsgent putsgent \
-		  getsgent_r getsgnam_r sgetsgent_r fgetsgent_r
+routines	= retrace-lib retrace
+
+CFLAGS-retrace-lib.c += -fexceptions
+CFLAGS-retrace.c += -fexceptions
 
 include ../Rules
