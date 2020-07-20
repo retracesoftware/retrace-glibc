@@ -1272,7 +1272,7 @@ all-subdirs = csu assert ctype locale intl catgets math setjmp signal	    \
 	      grp pwd posix io termios resource misc socket sysvipc gmon    \
 	      gnulib iconv iconvdata wctype manual shadow gshadow po argp   \
 	      localedata timezone rt conform debug mathvec support	    \
-	      dlfcn elf
+	      dlfcn elf retrace
 
 ifeq ($(build-crypt),yes)
 all-subdirs += crypt
