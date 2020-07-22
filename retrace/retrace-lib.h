@@ -4,7 +4,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 typedef enum
 {
@@ -27,7 +32,16 @@ extern __thread Retrace_Log rlog;
 extern void RLog_Init(Retrace_Log* log, char* log_path, Retrace_Mode mode);
 extern void RLog_Displose(Retrace_Log* log);
 
-extern void Record_Read(int fd, char* buffer, size_t len);
-extern void Replay_Read(int fd, char* buffer, size_t len);
+extern void RLog_Push(Retrace_Log* rlog, const void* buffer, size_t buffer_size);
+extern void* RLog_Fetch(Retrace_Log* rlog, void* buffer, size_t buffer_size);
+
+extern void Record_Read(int fd, void* buffer, size_t len);
+extern int Replay_Read(int fd, void* buffer, size_t len);
+
+extern void Record_Open64(const char *file, int oflag, int mode);
+extern int Replay_Open64(const char *file, int oflag, int mode);
+
+extern void Record_Close(int fd);
+extern int Replay_Close(int fd);
 
 #endif

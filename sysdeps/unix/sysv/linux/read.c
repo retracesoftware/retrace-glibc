@@ -28,9 +28,13 @@ __thread Retrace_Log rlog;
 ssize_t
 __libc_read (int fd, void *buf, size_t nbytes)
 {
+    int ret_val = -1;
+
     if (rlog.mode == Retrace_Record_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
+        
+        ret_val = SYSCALL_CANCEL (read, fd, buf, nbytes);
         
         Record_Read(fd, buf, nbytes);
 
@@ -40,12 +44,16 @@ __libc_read (int fd, void *buf, size_t nbytes)
     {
         rlog.mode = Retrace_Disabled_Mode;
 
-        Replay_Read(fd, buf, nbytes);
+        ret_val = Replay_Read(fd, buf, nbytes);
 
         rlog.mode = Retrace_Replay_Mode;
     }
-
-    return SYSCALL_CANCEL (read, fd, buf, nbytes);  
+    else
+    {
+        return SYSCALL_CANCEL (read, fd, buf, nbytes);
+    }
+    
+    return ret_val;
 }
 libc_hidden_def (__libc_read)
 

@@ -23,6 +23,9 @@
 
 #include <sysdep-cancel.h>
 
+#include "../../../retrace/retrace-lib.h"
+
+extern __thread Retrace_Log rlog;
 
 #ifdef __OFF_T_MATCHES_OFF64_T
 # define EXTRA_OPEN_FLAGS 0
@@ -38,15 +41,39 @@ __libc_open64 (const char *file, int oflag, ...)
   int mode = 0;
 
   if (__OPEN_NEEDS_MODE (oflag))
-    {
-      va_list arg;
-      va_start (arg, oflag);
-      mode = va_arg (arg, int);
-      va_end (arg);
-    }
+  {
+    va_list arg;
+    va_start (arg, oflag);
+    mode = va_arg (arg, int);
+    va_end (arg);
+  }
 
-  return SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
+  int ret_val = -1;
+
+  if (rlog.mode == Retrace_Record_Mode) 
+  {
+      rlog.mode = Retrace_Disabled_Mode;
+      
+      ret_val = SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
 			 mode);
+
+      rlog.mode = Retrace_Record_Mode;
+  } 
+  else if (rlog.mode == Retrace_Replay_Mode) 
+  {
+      rlog.mode = Retrace_Disabled_Mode;
+
+      ret_val = Replay_Open64(file, oflag, mode);
+
+      rlog.mode = Retrace_Replay_Mode;
+  }
+  else
+  {
+      return SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
+			 mode);
+  }  
+
+  return ret_val;
 }
 
 strong_alias (__libc_open64, __open64)

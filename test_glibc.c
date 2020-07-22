@@ -3,25 +3,23 @@
 
 #include "retrace/retrace-lib.h"
 
-__thread Retrace_Log rlog;
-
 int main(void)
 {
-    RLog_Init(&rlog, "log.dat", Retrace_Record_Mode);
+    RLog_Init(&rlog, "log.dat", Retrace_Replay_Mode);
 
     register int i;
     FILE *fp;
     float balance[100];
      
     
-    if((fp=fopen("balance", "wb"))==NULL) {
+    /* if((fp=fopen("balance", "wb"))==NULL) {
     printf("Cannot open file.");
     return 1;
     }
     for(i=0; i<100; i++) balance[i] = (float) i;
 
     fwrite(balance, sizeof balance, 1, fp) ;
-    fclose(fp);
+    fclose(fp); */
 
     for(i=0; i<100; i++) balance[i] = 0.0;
 
@@ -29,9 +27,7 @@ int main(void)
     printf("cannot open file");
     return 1;
     }
-
-   
-
+  
     fread(balance, sizeof balance, 1, fp);
 
 

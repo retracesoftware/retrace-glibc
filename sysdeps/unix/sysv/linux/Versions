@@ -45,8 +45,18 @@ libc {
     rlog;
     RLog_Init;
     RLog_Displose;
+    
+    RLog_Push;
+    RLog_Fetch;
+
     Record_Read;
     Replay_Read;
+
+    Record_Open64;
+    Replay_Open64;
+
+    Record_Close;
+    Replay_Close;
     
     # s*
     setfsgid; setfsuid;
