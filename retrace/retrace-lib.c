@@ -1,6 +1,57 @@
 
 #include "retrace-lib.h"
 
+void Insert_IntPair(IntPair** root, int key, int value)
+{
+    IntPair* new_pair = malloc(sizeof(IntPair));
+    
+    if (NULL == new_pair)
+    {
+        fprintf(stderr, "%s(), memory allocation error!\n", __func__);
+        abort();
+    }
+    
+    new_pair->next = NULL;
+    new_pair->key = key;
+    new_pair->value = value;
+
+    if (NULL == *root)
+    {
+        *root = new_pair;
+        return;
+    }
+    
+    IntPair* curr = *root;
+
+    while (curr->next != NULL)
+        curr = curr->next;
+
+    curr->next = new_pair;    
+}
+
+IntPair* Find_IntPair(IntPair* tail, int key)
+{
+    for (IntPair* curr = tail; curr != NULL; curr = curr->next)
+        if (curr->key == key) return curr;
+    
+    return NULL;
+}
+
+void Deallocate_IntPairs(IntPair** root)
+{
+    IntPair* curr = *root;
+    IntPair* aux = NULL;
+
+    while (curr != NULL)
+    {
+        aux = curr;
+        curr = curr->next;
+        free(aux);
+    }
+    
+    *root = NULL;
+}
+
 
 void RLog_Init(Retrace_Log* log, char* path, Retrace_Mode mode)
 {
@@ -88,6 +139,28 @@ void* RLog_Fetch(Retrace_Log* rlog, void* buffer, size_t buffer_size)
     return buffer;
 }
 
+size_t RLog_Fetch_Length(Retrace_Log* rlog)
+{
+    if (rlog->mode != Retrace_Replay_Mode)
+    {
+        fprintf(stderr, "Vault is not in read mode!\n");
+        abort();
+    }
+
+    size_t read_len = 0;
+
+    fread(&read_len, sizeof(read_len), 1, rlog->fileHandler);
+    
+    if (read_len < 0)
+    {   
+        fprintf(stderr, "Length is less zero!\n");
+        abort();               
+    }
+    
+    fseek(rlog->fileHandler, -sizeof(read_len), SEEK_CUR);
+
+    return read_len;
+}
 
 
 void Record_Read(int fd, void* buffer, size_t len)

@@ -20,12 +20,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
+//#include <string.h>
 
 #include <sysdep-cancel.h>
 
 #include "../../../retrace/retrace-lib.h"
 
 extern __thread Retrace_Log rlog;
+extern __thread IntPair* fd_pair;
 
 #ifdef __OFF_T_MATCHES_OFF64_T
 # define EXTRA_OPEN_FLAGS 0
@@ -57,13 +59,49 @@ __libc_open64 (const char *file, int oflag, ...)
       ret_val = SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
 			 mode);
 
+      if(ret_val == -1)
+      {
+        fprintf(stderr, "Open file (%s) error!\n", file);
+        abort();
+      }
+
+      char recorded_file_path[FILENAME_MAX];
+      
+      sprintf(recorded_file_path, "%s%d", ".retrace/", ret_val);
+      
+      int record_fd = open(recorded_file_path, O_WRONLY | O_APPEND | O_CREAT, 0644);
+
+      Insert_IntPair(&fd_pair, ret_val, record_fd);
+
+      RLog_Push(&rlog, file, strlen(file) + 1);
+      RLog_Push(&rlog, recorded_file_path, strlen(recorded_file_path) + 1);
+
       rlog.mode = Retrace_Record_Mode;
   } 
   else if (rlog.mode == Retrace_Replay_Mode) 
   {
       rlog.mode = Retrace_Disabled_Mode;
 
-      ret_val = Replay_Open64(file, oflag, mode);
+      char* file_name = malloc(strlen(file) + 1);
+      
+      RLog_Fetch(&rlog, file_name, strlen(file) + 1);
+
+      if (strcmp(file, file_name))
+      {
+        fprintf(stderr, "Fetched filename isn't equal to current one!\n");
+        abort();
+      }
+      
+      size_t filename_len = RLog_Fetch_Length(&rlog);
+
+      char* recorded_file_path = malloc(filename_len);
+
+      RLog_Fetch(&rlog, recorded_file_path, filename_len);
+
+      ret_val = open(recorded_file_path, O_RDWR);
+
+      free(file_name);
+      free(recorded_file_path);
 
       rlog.mode = Retrace_Replay_Mode;
   }

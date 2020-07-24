@@ -43,11 +43,18 @@ libc {
     query_module; quotactl;
 
     rlog;
+    fd_pair;
+
+    Insert_IntPair;
+    Find_IntPair;
+    Deallocate_IntPairs;
+    
     RLog_Init;
     RLog_Displose;
     
     RLog_Push;
     RLog_Fetch;
+    RLog_Fetch_Length;
 
     Record_Read;
     Replay_Read;

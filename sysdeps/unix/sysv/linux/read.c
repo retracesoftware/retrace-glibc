@@ -23,6 +23,7 @@
 #include "../../../retrace/retrace-lib.h"
 
 __thread Retrace_Log rlog;
+__thread IntPair* fd_pair = NULL;
 
 /* Read NBYTES into BUF from FD.  Return the number read or -1.  */
 ssize_t
@@ -35,8 +36,18 @@ __libc_read (int fd, void *buf, size_t nbytes)
         rlog.mode = Retrace_Disabled_Mode;
         
         ret_val = SYSCALL_CANCEL (read, fd, buf, nbytes);
+
+        IntPair* pair = Find_IntPair(fd_pair, fd);
+
+        if(NULL == pair)
+        {
+            fprintf(stderr, "IntPair doesn't found!\n");
+            abort();
+        }
+
         
-        Record_Read(fd, buf, nbytes);
+        
+        Record_Read(pair->value, buf, nbytes);
 
         rlog.mode = Retrace_Record_Mode;
     } 
@@ -44,7 +55,7 @@ __libc_read (int fd, void *buf, size_t nbytes)
     {
         rlog.mode = Retrace_Disabled_Mode;
 
-        ret_val = Replay_Read(fd, buf, nbytes);
+        ret_val = SYSCALL_CANCEL (read, fd, buf, nbytes);
 
         rlog.mode = Retrace_Replay_Mode;
     }
