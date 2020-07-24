@@ -58,13 +58,7 @@ __libc_open64 (const char *file, int oflag, ...)
       
       ret_val = SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
 			 mode);
-
-      if(ret_val == -1)
-      {
-        fprintf(stderr, "Open file (%s) error!\n", file);
-        abort();
-      }
-
+       
       char recorded_file_path[FILENAME_MAX];
       
       sprintf(recorded_file_path, "%s%d", ".retrace/", ret_val);

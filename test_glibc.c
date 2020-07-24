@@ -36,7 +36,7 @@ int main(void)
         
     fclose(fp);
     
-    //RLog_Displose(&rlog);
+    RLog_Displose(&rlog);
 
 
     return 0;

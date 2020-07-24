@@ -44,11 +44,13 @@ __libc_read (int fd, void *buf, size_t nbytes)
             fprintf(stderr, "IntPair doesn't found!\n");
             abort();
         }
-
         
+        if(nbytes != write(pair->value, buf, nbytes))
+        {
+            fprintf(stderr, "Write error!\n");
+            abort();
+        }
         
-        Record_Read(pair->value, buf, nbytes);
-
         rlog.mode = Retrace_Record_Mode;
     } 
     else if (rlog.mode == Retrace_Replay_Mode) 

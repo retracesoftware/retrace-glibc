@@ -86,24 +86,26 @@ void RLog_Displose(Retrace_Log* log)
     log->fileHandler = NULL;
     log->path = NULL;
 
+    Deallocate_IntPairs(&fd_pair);
+
     printf("%s() success\n\n", __func__);
 }
 
 void RLog_Push(Retrace_Log* rlog, const void* buffer, size_t buffer_size)
 {
-    if (rlog->mode != Retrace_Record_Mode) return;
+    if (rlog->mode == Retrace_Replay_Mode) return;
       
     if (NULL == buffer) return;
-    
+       
     fwrite(&buffer_size, sizeof(buffer_size), 1, rlog->fileHandler);
     fwrite(buffer, buffer_size, 1, rlog->fileHandler);
 }
 
 void* RLog_Fetch(Retrace_Log* rlog, void* buffer, size_t buffer_size)
 {
-    if (rlog->mode != Retrace_Replay_Mode)
+    if ((rlog->mode != Retrace_Replay_Mode) && (rlog->mode != Retrace_Disabled_Mode))
     {
-        fprintf(stderr, "Vault is not in read mode!\n");
+        fprintf(stderr, "RLog is not in read/disabled mode!\n");
         abort();
     }
 
@@ -141,9 +143,9 @@ void* RLog_Fetch(Retrace_Log* rlog, void* buffer, size_t buffer_size)
 
 size_t RLog_Fetch_Length(Retrace_Log* rlog)
 {
-    if (rlog->mode != Retrace_Replay_Mode)
+    if ((rlog->mode != Retrace_Replay_Mode) && (rlog->mode != Retrace_Disabled_Mode))
     {
-        fprintf(stderr, "Vault is not in read mode!\n");
+        fprintf(stderr, "RLog is not in read/disabled mode!\n");
         abort();
     }
 

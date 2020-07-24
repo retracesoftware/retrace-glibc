@@ -3,5 +3,5 @@
 mkdir build
 cd build
 ../configure --prefix "$glibc_install"
-make
+make -j4
 make install
