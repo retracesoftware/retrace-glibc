@@ -5,7 +5,7 @@
 
 int main(void)
 {
-    RLog_Init(&rlog, "log.dat", Retrace_Replay_Mode);   
+    RLog_Init(&rlog, "log.dat", Retrace_Record_Mode);   
 
     register int i;
     FILE *fp;

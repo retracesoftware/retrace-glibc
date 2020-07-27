@@ -20,7 +20,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
-//#include <string.h>
+#include <string.h>
 
 #include <sysdep-cancel.h>
 
@@ -63,7 +63,26 @@ __libc_open64 (const char *file, int oflag, ...)
       
       sprintf(recorded_file_path, "%s%d", ".retrace/", ret_val);
       
+      struct stat stats;
+
+      stat(".retrace", &stats);
+
+      if (!S_ISDIR(stats.st_mode))
+      {
+        if(mkdir(".retrace", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+        {
+          fprintf(stderr, "Cannot create .retrace dir\n");
+          abort();
+        }
+      }
+
       int record_fd = open(recorded_file_path, O_WRONLY | O_APPEND | O_CREAT, 0644);
+
+      if (record_fd < 0)
+      {
+        fprintf(stderr, "Record file open error!\n");
+        abort();
+      }      
 
       Insert_IntPair(&fd_pair, ret_val, record_fd);
 
