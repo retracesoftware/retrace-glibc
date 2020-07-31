@@ -11,6 +11,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#define LOG_FILE "log.dat"
+#define RETRACE_DIR ".retrace/"
+
 typedef enum
 {
     Retrace_Disabled_Mode,

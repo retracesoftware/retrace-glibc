@@ -1,43 +1,55 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "retrace/retrace-lib.h"
 
-int main(void)
+int check_open(const char *filename) 
 {
-    RLog_Init(&rlog, "log.dat", Retrace_Record_Mode);   
+    RLog_Init(&rlog, LOG_FILE, Retrace_Record_Mode);
 
     register int i;
     FILE *fp;
-    float balance[100];
-     
-    
-    if((fp=fopen("balance", "wb"))==NULL) {
-    printf("Cannot open file.");
-    return 1;
+    float data[100];
+
+    int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+    if (fd < 0)
+    {
+        printf("cannot open file");
+        exit(1);
     }
-    for(i=0; i<100; i++) balance[i] = (float) i;
-
-    fwrite(balance, sizeof balance, 1, fp) ;
-    fclose(fp);
-
-    for(i=0; i<100; i++) balance[i] = 0.0;
-
-    if((fp=fopen("balance","rb"))==NULL) {
-    printf("cannot open file");
-    return 1;
-    }
-  
-    fread(balance, sizeof balance, 1, fp);
-
 
     for(i=0; i<100; i++) 
-        printf("%f  \n", balance [i]);
-        
+        data[i] = (float) i;
+
+    write(fd, data, sizeof(data));
+    close(fd);
+
+    for(i=0; i<100; i++) 
+        data[i] = 0.0;
+
+    if((fp=fopen(filename,"rb")) == NULL ) 
+    {
+        printf("cannot open file");
+        return 1;
+    }
+
+    fread(data, sizeof data, 1, fp);
+
+    for(i=0; i<100; i++)
+        printf("%f  \n", data [i]);
+
+    fflush(fp);
     fclose(fp);
     
-    RLog_Displose(&rlog);
 
+    RLog_Displose(&rlog);
+}
+
+int main(void)
+{
+    check_open("balance");
 
     return 0;
 }

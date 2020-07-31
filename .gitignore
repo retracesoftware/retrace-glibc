@@ -47,3 +47,6 @@ core
 
 
 *.out
+*.dat
+.retrace/
+balance

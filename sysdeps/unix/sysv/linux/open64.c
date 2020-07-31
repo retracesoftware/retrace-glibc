@@ -21,6 +21,10 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
+#include <pthread.h>
+#include <sys/syscall.h>
+#include <sys/uio.h>
+#include <time.h>
 
 #include <sysdep-cancel.h>
 
@@ -50,50 +54,76 @@ __libc_open64 (const char *file, int oflag, ...)
     va_end (arg);
   }
 
+  pthread_t thread_id = 0;
   int ret_val = -1;
+  size_t syscall = __NR_open;
+  time_t cur_time;
 
   if (rlog.mode == Retrace_Record_Mode) 
   {
-      rlog.mode = Retrace_Disabled_Mode;
-      
-      ret_val = SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
-			 mode);
-       
-      char recorded_file_path[FILENAME_MAX];
-      
-      sprintf(recorded_file_path, "%s%d", ".retrace/", ret_val);
-      
-      struct stat stats;
+	rlog.mode = Retrace_Disabled_Mode;
+		
+	thread_id = pthread_self();
+	cur_time = time(NULL);
 
-      stat(".retrace", &stats);
+	RLog_Push(&rlog, &syscall, sizeof(syscall));
+	RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+	RLog_Push(&rlog, &cur_time, sizeof(cur_time));
 
-      if (!S_ISDIR(stats.st_mode))
-      {
-        if(mkdir(".retrace", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
-        {
-          fprintf(stderr, "Cannot create .retrace dir\n");
-          abort();
-        }
-      }
+	ret_val = SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
+			mode);
 
-      int record_fd = open(recorded_file_path, O_WRONLY | O_APPEND | O_CREAT, 0644);
+	RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+	
+	char recorded_file_path[FILENAME_MAX];
+	
+	sprintf(recorded_file_path, "%s%d", RETRACE_DIR, ret_val);
+	
+	struct stat stats;
 
-      if (record_fd < 0)
-      {
-        fprintf(stderr, "Record file open error!\n");
-        abort();
-      }      
+	stat(RETRACE_DIR, &stats);
 
-      Insert_IntPair(&fd_pair, ret_val, record_fd);
+	if (!S_ISDIR(stats.st_mode))
+	{
+		if(mkdir(RETRACE_DIR, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+		{
+			fprintf(stderr, "Cannot create %s dir\n", RETRACE_DIR);
+			abort();
+		}
+	}
 
-      RLog_Push(&rlog, file, strlen(file) + 1);
-      RLog_Push(&rlog, recorded_file_path, strlen(recorded_file_path) + 1);
+	int record_fd = open(recorded_file_path, O_WRONLY | O_APPEND | O_CREAT, 0644);
 
-      rlog.mode = Retrace_Record_Mode;
+	if (record_fd < 0)
+	{
+		fprintf(stderr, "Record file open error!\n");
+		abort();
+	}      
+
+	Insert_IntPair(&fd_pair, ret_val, record_fd);
+
+	RLog_Push(&rlog, file, strlen(file) + 1);
+	RLog_Push(&rlog, recorded_file_path, strlen(recorded_file_path) + 1);
+
+	rlog.mode = Retrace_Record_Mode;
   } 
   else if (rlog.mode == Retrace_Replay_Mode) 
   {
       rlog.mode = Retrace_Disabled_Mode;
+      
+      size_t fetched_syscall;
+
+      RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+      
+      if(fetched_syscall != syscall)
+      {
+		  fprintf(stderr, "Fetched syscall not equal to current one!\n");
+		  abort();
+      }
+      
+      RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+      RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+	  RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
 
       char* file_name = malloc(strlen(file) + 1);
       
