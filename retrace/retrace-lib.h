@@ -4,12 +4,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <sys/syscall.h>
+#include <pthread.h>
+#include <sys/uio.h>
+#include <time.h>
+#include <stdarg.h>
 
 #define LOG_FILE "log.dat"
 #define RETRACE_DIR ".retrace/"
@@ -38,6 +43,8 @@ typedef struct IntPair
 
 } IntPair;
 
+pthread_mutex_t rmutex;
+
 void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
 void Deallocate_IntPairs(IntPair** root);
@@ -52,13 +59,12 @@ extern void RLog_Push(Retrace_Log* rlog, const void* buffer, size_t buffer_size)
 extern void* RLog_Fetch(Retrace_Log* rlog, void* buffer, size_t buffer_size);
 extern size_t RLog_Fetch_Length(Retrace_Log* rlog);
 
-extern void Record_Read(int fd, void* buffer, size_t len);
-extern int Replay_Read(int fd, void* buffer, size_t len);
+extern size_t Record_Args(Retrace_Log* rlog, int arg_num, ...);
 
-extern void Record_Open64(const char *file, int oflag, int mode);
-extern int Replay_Open64(const char *file, int oflag, int mode);
+extern int Retrace_Read(int fd, void* buffer, size_t len);
+extern int Retrace_Write(int fd, const void* buffer, size_t len);
+extern int Retrace_Open64(const char *file, int oflag, int mode);
+extern int Retrace_Close(int fd);
 
-extern void Record_Close(int fd);
-extern int Replay_Close(int fd);
 
 #endif

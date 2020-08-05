@@ -1,6 +1,8 @@
 
 #include "retrace-lib.h"
 
+#include <sysdep-cancel.h>
+
 void Insert_IntPair(IntPair** root, int key, int value)
 {
     IntPair* new_pair = malloc(sizeof(IntPair));
@@ -57,6 +59,8 @@ void RLog_Init(Retrace_Log* log, char* path, Retrace_Mode mode)
 {
     if(log == NULL) return;
 
+    //pthread_mutex_init(&rmutex, NULL);
+
     log->path = path;
 
     log->mode = Retrace_Disabled_Mode;
@@ -88,21 +92,38 @@ void RLog_Displose(Retrace_Log* log)
 
     Deallocate_IntPairs(&fd_pair);
 
+    //pthread_mutex_destroy(&rmutex);
+
     printf("%s() success\n\n", __func__);
 }
 
 void RLog_Push(Retrace_Log* rlog, const void* buffer, size_t buffer_size)
 {
+    //pthread_mutex_lock(&rmutex);
+
     if (rlog->mode == Retrace_Replay_Mode) return;
       
     if (NULL == buffer) return;
-       
-    fwrite(&buffer_size, sizeof(buffer_size), 1, rlog->fileHandler);
-    fwrite(buffer, buffer_size, 1, rlog->fileHandler);
+      
+    if(fwrite(&buffer_size, sizeof(buffer_size), 1, rlog->fileHandler) != 1)
+    {
+        fprintf(stderr, "%s(), fwrite error!\n", __func__);
+        abort();
+    }
+
+    if(fwrite(buffer, buffer_size, 1, rlog->fileHandler) != 1)
+    {
+        fprintf(stderr, "%s(), fwrite error!\n", __func__);
+        abort();
+    }
+
+    //pthread_mutex_unlock(&rmutex);
 }
 
 void* RLog_Fetch(Retrace_Log* rlog, void* buffer, size_t buffer_size)
 {
+    //pthread_mutex_lock(&rmutex);
+
     if ((rlog->mode != Retrace_Replay_Mode) && (rlog->mode != Retrace_Disabled_Mode))
     {
         fprintf(stderr, "RLog is not in read/disabled mode!\n");
@@ -137,12 +158,16 @@ void* RLog_Fetch(Retrace_Log* rlog, void* buffer, size_t buffer_size)
     }
 
     fread(buffer, 1, buffer_size, rlog->fileHandler);
+    
+    //pthread_mutex_unlock(&rmutex);
 
     return buffer;
 }
 
 size_t RLog_Fetch_Length(Retrace_Log* rlog)
 {
+    //pthread_mutex_lock(&rmutex);
+    
     if ((rlog->mode != Retrace_Replay_Mode) && (rlog->mode != Retrace_Disabled_Mode))
     {
         fprintf(stderr, "RLog is not in read/disabled mode!\n");
@@ -160,43 +185,350 @@ size_t RLog_Fetch_Length(Retrace_Log* rlog)
     }
     
     fseek(rlog->fileHandler, -sizeof(read_len), SEEK_CUR);
+    
+    //pthread_mutex_unlock(&rmutex);
 
     return read_len;
 }
 
-
-void Record_Read(int fd, void* buffer, size_t len)
+size_t Record_Args(Retrace_Log* rlog, int arg_num, ...)
 {
-    fwrite(buffer, len, 1, rlog.fileHandler);
-}
+    if (rlog->mode == Retrace_Replay_Mode) return EXIT_SUCCESS;
 
-int Replay_Read(int fd, void* buffer, size_t len)
-{
-    fread(buffer, len, 1, rlog.fileHandler);
-
-    return len;
-}
-
-void Record_Open64(const char *file, int oflag, int mode)
-{
+    if (arg_num % 2 != 0)
+    {
+        fprintf(stderr, "Error! Usage: first arg - buffer size, second one - pointer to buffer\n");
+        return EXIT_FAILURE;
+    }
     
-    
-    
+    // Sequence: first arg is buffer size, next - void* buffer  
+    va_list arg_ptr;
+    va_start(arg_ptr, arg_num);
+
+    size_t buffer_size;
+    void* buffer = NULL;
+
+    while(arg_num)
+    {
+        buffer_size = va_arg(arg_ptr, size_t);
+        arg_num--;
+        buffer = va_arg(arg_ptr, void*);
+        arg_num--;
+
+        if(fwrite(&buffer_size, sizeof(size_t), 1, rlog->fileHandler) != 1)
+        {
+            fprintf(stderr, "%s(), fwrite error!\n", __func__);
+            return EXIT_FAILURE;
+        }
+
+        if(fwrite(buffer, 1, buffer_size, rlog->fileHandler) != buffer_size)
+        {
+            fprintf(stderr, "%s(), fwrite error!\n", __func__);
+            return EXIT_FAILURE;
+        }
+    }
+
+    va_end(arg_ptr);
+
+    return EXIT_SUCCESS;
 }
 
-int Replay_Open64(const char *file, int oflag, int mode)
+
+int Retrace_Read(int fd, void* buffer, size_t len)
 {
-    return fileno(rlog.fileHandler);
+    int ret_val = -1;
+    size_t syscall = __NR_read;
+    time_t cur_time = 0;
+    pthread_t thread_id = 0;
+
+    if (rlog.mode == Retrace_Record_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        ret_val = SYSCALL_CANCEL (read, fd, buffer, len);
+        
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall, sizeof(syscall));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        IntPair* pair = Find_IntPair(fd_pair, fd);
+
+        if(NULL == pair)
+        {
+            fprintf(stderr, "%s(), IntPair doesn't found!\n", __func__);
+            abort();
+        }
+        
+        if(len != write(pair->value, buffer, len))
+        {
+            fprintf(stderr, "Write error!\n");
+            abort();
+        }
+        
+        rlog.mode = Retrace_Record_Mode;
+    } 
+    else if (rlog.mode == Retrace_Replay_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        ret_val = SYSCALL_CANCEL (read, fd, buffer, len);
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else return SYSCALL_CANCEL (read, fd, buffer, len);
+    
+    return ret_val;
 }
 
-void Record_Close(int fd)
+int Retrace_Open64(const char *file, int oflag, int mode)
 {
+    #ifdef __OFF_T_MATCHES_OFF64_T
+    # define EXTRA_OPEN_FLAGS 0
+    #else
+    # define EXTRA_OPEN_FLAGS O_LARGEFILE
+    #endif
+    
+    int ret_val = -1;
+    size_t syscall_num = __NR_open;
+    pthread_t thread_id;
+    time_t cur_time;
+    
+    if (rlog.mode == Retrace_Record_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
 
+        ret_val = SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS, mode);
 
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        char recorded_file_path[FILENAME_MAX];
+        sprintf(recorded_file_path, "%s%d", RETRACE_DIR, ret_val);
+        
+        struct stat stats;
+        stat(RETRACE_DIR, &stats);
+
+        if (!S_ISDIR(stats.st_mode))
+        {
+            if(mkdir(RETRACE_DIR, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+            {
+                fprintf(stderr, "Cannot create %s dir\n", RETRACE_DIR);
+                abort();
+            }
+        }
+
+        int record_fd = open(recorded_file_path, O_WRONLY | O_APPEND | O_CREAT, 0644);
+
+        if (record_fd < 0)
+        {
+            fprintf(stderr, "Record file open error!\n");
+            abort();
+        }      
+
+        Insert_IntPair(&fd_pair, ret_val, record_fd);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+        RLog_Push(&rlog, file, strlen(file) + 1);
+        RLog_Push(&rlog, recorded_file_path, strlen(recorded_file_path) + 1);
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+    
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+        
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        char* file_name = malloc(strlen(file) + 1);
+        
+        RLog_Fetch(&rlog, file_name, strlen(file) + 1);
+
+        if (strcmp(file, file_name))
+        {
+            fprintf(stderr, "Fetched filename isn't equal to current one!\n");
+            abort();
+        }
+        
+        size_t filename_len = RLog_Fetch_Length(&rlog);
+
+        char* recorded_file_path = malloc(filename_len);
+
+        RLog_Fetch(&rlog, recorded_file_path, filename_len);
+
+        ret_val = open(recorded_file_path, O_RDWR);
+
+        free(file_name);
+        free(recorded_file_path);
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else return SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS, mode);
+
+    return ret_val;
 }
 
- int Replay_Close(int fd)
- {
+int Retrace_Write(int fd, const void* buffer, size_t len)
+{
+    int ret_val = -1;
+    size_t syscall = __NR_write;
+    time_t cur_time = 0;
+    pthread_t thread_id = 0;
 
-     return 0;
- }
+    if(fd < 3)
+        return SYSCALL_CANCEL (write, fd, buffer, len);
+
+    if (rlog.mode == Retrace_Record_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        ret_val = SYSCALL_CANCEL (write, fd, buffer, len);
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall, sizeof(syscall));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        IntPair* pair = Find_IntPair(fd_pair, fd);
+
+        if(NULL == pair)
+        {
+            fprintf(stderr, "%s(), IntPair doesn't found!\n", __func__);
+            abort();
+        }
+        
+        if(len != write(pair->value, buffer, len))
+        {
+            fprintf(stderr, "Write error!\n");
+            abort();
+        }
+        
+        rlog.mode = Retrace_Record_Mode;
+    } 
+    else if (rlog.mode == Retrace_Replay_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        ret_val = SYSCALL_CANCEL (write, fd, buffer, len);
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else return SYSCALL_CANCEL (write, fd, buffer, len);
+
+    return ret_val;
+}
+
+int Retrace_Close(int fd)
+{
+    pthread_t thread_id = 0;
+    int ret_val = -1;
+    size_t syscall = __NR_close;
+    time_t cur_time;
+    
+    if (rlog.mode == Retrace_Record_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        ret_val = SYSCALL_CANCEL (close, fd);
+        
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall, sizeof(syscall));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        IntPair* pair = Find_IntPair(fd_pair, fd);
+
+        if(NULL == pair)
+        {
+            fprintf(stderr, "IntPair doesn't found!\n");
+            abort();
+        }
+
+        if(-1 == close(pair->value))
+        {
+            fprintf(stderr, "Closing error!\n");
+            abort();
+        }
+            
+        rlog.mode = Retrace_Record_Mode;
+    } 
+    else if (rlog.mode == Retrace_Replay_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+        
+        if(fetched_syscall != syscall)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+        
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        ret_val = SYSCALL_CANCEL (close, fd);
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else return SYSCALL_CANCEL (close, fd);
+
+    return ret_val;
+}
+
+ 

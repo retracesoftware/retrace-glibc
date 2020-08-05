@@ -44,6 +44,7 @@ libc {
 
     rlog;
     fd_pair;
+    rmutex;
 
     Insert_IntPair;
     Find_IntPair;
@@ -56,15 +57,13 @@ libc {
     RLog_Fetch;
     RLog_Fetch_Length;
 
-    Record_Read;
-    Replay_Read;
+    Record_Args;
 
-    Record_Open64;
-    Replay_Open64;
-
-    Record_Close;
-    Replay_Close;
-    
+    Retrace_Read;
+    Retrace_Open64;
+    Retrace_Close;
+    Retrace_Write;
+       
     # s*
     setfsgid; setfsuid;
 
