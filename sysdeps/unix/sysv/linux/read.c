@@ -20,13 +20,12 @@
 #include <unistd.h>
 #include <sysdep-cancel.h>
 #include <sys/syscall.h>
-#include <pthread.h>
 
 #include "../../../retrace/retrace-lib.h"
 
 __thread Retrace_Log rlog;
 __thread IntPair* fd_pair = NULL;
-//__thread IntPair* sock_pair = NULL;
+
 
 /* Read NBYTES into BUF from FD.  Return the number read or -1.  */
 ssize_t

@@ -93,10 +93,8 @@ int check_socket()
         send(sock, message, sizeof(message), 0);
         recv(sock, buf, sizeof(message), 0);
         
-        printf("buffer: %s\n", buf);
+        printf("Client received from server: %s\n", buf);
         close(sock);
-
-        return 0;
     }
     else
     {
@@ -135,16 +133,16 @@ int check_socket()
         }
 
         bytes_read = recv(sock, buf, 1024, 0);
+
+        printf("Server received: %s\nSending it back to the client...\n", buf);
         
         send(sock, buf, bytes_read, 0);
         
         close(sock);
-
-        return 0;
     }
     
 
-    
+    return 0;
 }
 
 int main(void)

@@ -66,5 +66,6 @@ extern int Retrace_Write(int fd, const void* buffer, size_t len);
 extern int Retrace_Open64(const char *file, int oflag, int mode);
 extern int Retrace_Close(int fd);
 
+extern int Retrace_Socket(int fd, int type, int domain);
 
 #endif
