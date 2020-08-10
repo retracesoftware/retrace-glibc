@@ -31,11 +31,7 @@ __thread IntPair* sock_pair = NULL;
 int
 __socket (int fd, int type, int domain)
 {
-#ifdef __ASSUME_SOCKET_SYSCALL
   return Retrace_Socket(fd, type, domain);
-#else
-  return Retrace_Socket(fd, type, domain);
-#endif
 }
 libc_hidden_def (__socket)
 weak_alias (__socket, socket)

@@ -139,6 +139,9 @@ int check_socket()
         send(sock, buf, bytes_read, 0);
         
         close(sock);
+
+        shutdown(listener, SHUT_RDWR);
+        close(listener);
     }
     
 

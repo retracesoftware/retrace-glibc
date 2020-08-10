@@ -23,13 +23,14 @@
 #include <kernel-features.h>
 #include <sys/syscall.h>
 
+#include "../../../retrace/retrace-lib.h"
+
+extern __thread Retrace_Log rlog;
+extern __thread IntPair* sock_pair;
+
 int
 __bind (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
-#ifdef __ASSUME_BIND_SYSCALL
-  return INLINE_SYSCALL (bind, 3, fd, addr.__sockaddr__, len);
-#else
-  return SOCKETCALL (bind, fd, addr.__sockaddr__, len, 0, 0, 0);
-#endif
+  return Retrace_Bind(fd, addr, len);
 }
 weak_alias (__bind, bind)

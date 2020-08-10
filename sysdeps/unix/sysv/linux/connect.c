@@ -19,14 +19,15 @@
 #include <sysdep-cancel.h>
 #include <socketcall.h>
 
+#include "../../../retrace/retrace-lib.h"
+
+extern __thread Retrace_Log rlog;
+extern __thread IntPair* sock_pair;
+
 int
 __libc_connect (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
-#ifdef __ASSUME_CONNECT_SYSCALL
-  return SYSCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
-#else
-  return SOCKETCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
-#endif
+  return Retrace_Connect(fd, addr, len);
 }
 weak_alias (__libc_connect, connect)
 weak_alias (__libc_connect, __connect)

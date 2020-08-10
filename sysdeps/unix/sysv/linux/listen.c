@@ -23,13 +23,14 @@
 #include <kernel-features.h>
 #include <sys/syscall.h>
 
+#include "../../../retrace/retrace-lib.h"
+
+extern __thread Retrace_Log rlog;
+extern __thread IntPair* sock_pair;
+
 int
 listen (int fd, int backlog)
 {
-#ifdef __ASSUME_LISTEN_SYSCALL
-  return INLINE_SYSCALL (listen, 2, fd, backlog);
-#else
-  return SOCKETCALL (listen, fd, backlog);
-#endif
+  return Retrace_Listen(fd, backlog);
 }
 weak_alias (listen, __listen);

@@ -8,6 +8,7 @@ gcc \
   -std=c11 \
   -o test_glibc.out \
   -v \
+  -g \
   test_glibc.c \
   -pthread \
 ;

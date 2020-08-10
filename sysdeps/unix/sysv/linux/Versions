@@ -44,6 +44,7 @@ libc {
 
     rlog;
     fd_pair;
+    sock_pair;
     rmutex;
 
     Insert_IntPair;
@@ -58,11 +59,20 @@ libc {
     RLog_Fetch_Length;
 
     Record_Args;
+    Check_Dir;
 
     Retrace_Read;
     Retrace_Open64;
     Retrace_Close;
     Retrace_Write;
+
+    Retrace_Socket;
+    Retrace_Bind;
+    Retrace_Listen;
+    Retrace_Accept;
+    Retrace_Connect;
+    Retrace_Send;
+    Retrace_Recv;
        
     # s*
     setfsgid; setfsuid;
