@@ -148,9 +148,22 @@ int check_socket()
     return 0;
 }
 
+int check_sleep()
+{
+    printf("Time: %d\n", time(NULL));
+    sleep(1);
+
+    printf("Time: %d\n", time(NULL));
+    sleep(1);
+
+    printf("Time: %d\n", time(NULL));
+    sleep(1);
+}
+
 int main(void)
 {
-    check_socket();
+    //check_socket();
+    check_sleep();
 
     return 0;
 }

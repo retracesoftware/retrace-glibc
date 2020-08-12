@@ -51,9 +51,9 @@ void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
 void Deallocate_IntPairs(IntPair** root);
 
-__thread Retrace_Log rlog;
-__thread IntPair* fd_pair;
-__thread IntPair* sock_pair;
+extern __thread Retrace_Log rlog;
+extern __thread IntPair* fd_pair;
+extern __thread IntPair* sock_pair;
 
 void RLog_Init(Retrace_Log* log, char* log_path, Retrace_Mode mode);
 void RLog_Displose(Retrace_Log* log);
@@ -66,19 +66,20 @@ void Check_Dir(const char* dir_name);
 
 size_t Record_Args(Retrace_Log* rlog, int arg_num, ...);
 
-int Retrace_Read(int fd, void* buffer, size_t len);
-int Retrace_Write(int fd, const void* buffer, size_t len);
-int Retrace_Open64(const char *file, int oflag, int mode);
-int Retrace_Close(int fd);
+extern int Retrace_Read(int fd, void* buffer, size_t len);
+extern int Retrace_Write(int fd, const void* buffer, size_t len);
+extern int Retrace_Open64(const char *file, int oflag, int mode);
+extern int Retrace_Close(int fd);
 
-int Retrace_Socket(int fd, int type, int domain);
-int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
-int Retrace_Listen(int fd, int backlog);
-int Retrace_Accept(int fd, __SOCKADDR_ARG addr, socklen_t *len);
-int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
-int Retrace_Send(int fd, const void *buf, size_t len, int flags);
-int Retrace_Recv(int fd, void *buf, size_t len, int flags);
+extern int Retrace_Socket(int fd, int type, int domain);
+extern int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
+extern int Retrace_Listen(int fd, int backlog);
+extern int Retrace_Accept(int fd, __SOCKADDR_ARG addr, socklen_t *len);
+extern int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
+extern int Retrace_Send(int fd, const void *buf, size_t len, int flags);
+extern int Retrace_Recv(int fd, void *buf, size_t len, int flags);
 
+extern int Retrace_Sleep(unsigned int seconds);
 
 
 #endif

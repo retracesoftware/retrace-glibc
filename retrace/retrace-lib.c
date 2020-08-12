@@ -2,6 +2,10 @@
 #include "retrace-lib.h"
 
 #include <sysdep-cancel.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/socket.h>
+
 #include <socketcall.h>
 #include <kernel-features.h>
 #include <sys/syscall.h>
@@ -538,14 +542,16 @@ int Retrace_Close(int fd)
     return ret_val;
 }
 
+
+
 int Retrace_Socket(int fd, int type, int domain)
 {
     int ret_val = -1;
     size_t syscall_num = __NR_socket;
-    pthread_t thread_id;
+    /*pthread_t thread_id;
     time_t cur_time;
     
-    if (rlog.mode == Retrace_Record_Mode) 
+     if (rlog.mode == Retrace_Record_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
 
@@ -624,7 +630,7 @@ int Retrace_Socket(int fd, int type, int domain)
         #else
             return SOCKETCALL (socket, fd, type, domain);
         #endif
-    }
+    } */
 
     return ret_val;
 }
@@ -632,11 +638,11 @@ int Retrace_Socket(int fd, int type, int domain)
 int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
     int ret_val = -1;
-    size_t syscall_num = __NR_bind;
+    /*size_t syscall_num = __NR_bind;
     pthread_t thread_id;
     time_t cur_time;
     
-    if (rlog.mode == Retrace_Record_Mode) 
+     if (rlog.mode == Retrace_Record_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
 
@@ -683,7 +689,7 @@ int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
         #else
             return SOCKETCALL (bind, fd, addr.__sockaddr__, len, 0, 0, 0);
         #endif
-    }
+    } */
         
     return ret_val;
 }
@@ -691,11 +697,11 @@ int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 int Retrace_Listen(int fd, int backlog)
 {
     int ret_val = -1;
-    size_t syscall_num = __NR_listen;
+    /*size_t syscall_num = __NR_listen;
     pthread_t thread_id;
     time_t cur_time;
     
-    if (rlog.mode == Retrace_Record_Mode) 
+     if (rlog.mode == Retrace_Record_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
 
@@ -742,7 +748,7 @@ int Retrace_Listen(int fd, int backlog)
         #else
             return SOCKETCALL (listen, fd, backlog);
         #endif
-    }
+    } */
 
     return ret_val;
 }
@@ -750,11 +756,11 @@ int Retrace_Listen(int fd, int backlog)
 int Retrace_Accept(int fd, __SOCKADDR_ARG addr, socklen_t *len)
 {
     int ret_val = -1;
-    size_t syscall_num = __NR_accept;
+    /*size_t syscall_num = __NR_accept;
     pthread_t thread_id;
     time_t cur_time;
     
-    if (rlog.mode == Retrace_Record_Mode) 
+     if (rlog.mode == Retrace_Record_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
 
@@ -805,7 +811,7 @@ int Retrace_Accept(int fd, __SOCKADDR_ARG addr, socklen_t *len)
         #else
             return SOCKETCALL_CANCEL (accept, fd, addr.__sockaddr__, len);
         #endif
-    }
+    } */
 
     return ret_val;
 }
@@ -813,11 +819,11 @@ int Retrace_Accept(int fd, __SOCKADDR_ARG addr, socklen_t *len)
 int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
     int ret_val = -1;
-    size_t syscall_num = __NR_connect;
+    /*size_t syscall_num = __NR_connect;
     pthread_t thread_id;
     time_t cur_time;
     
-    if (rlog.mode == Retrace_Record_Mode) 
+     if (rlog.mode == Retrace_Record_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
 
@@ -864,7 +870,7 @@ int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
         #else
             return SOCKETCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
         #endif
-    }
+    } */
 
     return ret_val;
 }
@@ -872,11 +878,11 @@ int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 int Retrace_Send(int fd, const void *buf, size_t len, int flags)
 {
     int ret_val = -1;
-    size_t syscall_num = __NR_sendto;
+    /*size_t syscall_num = __NR_sendto;
     pthread_t thread_id;
     time_t cur_time;
     
-    if (rlog.mode == Retrace_Record_Mode) 
+     if (rlog.mode == Retrace_Record_Mode) 
     {
         rlog.mode = Retrace_Disabled_Mode;
 
@@ -943,16 +949,15 @@ int Retrace_Send(int fd, const void *buf, size_t len, int flags)
         #else
             return SOCKETCALL_CANCEL (send, fd, buf, len, flags);
         #endif
-    }
+    } */
 
     return ret_val;
 }
 
-
-int Retrace_Recv(int fd, void *buf, size_t len, int flags)
+int Retrace_Recv(int fd, void *buf, size_t len, int flags) 
 {
     int ret_val = -1;
-    size_t syscall_num = __NR_recvfrom;
+    /* size_t syscall_num = __NR_recvfrom;
     pthread_t thread_id;
     time_t cur_time;
     
@@ -1023,7 +1028,41 @@ int Retrace_Recv(int fd, void *buf, size_t len, int flags)
         #else
             return SOCKETCALL_CANCEL (recv, fd, buf, len, flags);
         #endif
-    }
+    } */
 
     return ret_val;
+}
+
+int Retrace_Sleep(unsigned int seconds)
+{
+    int save_errno = errno;
+
+    const unsigned int max
+        = (unsigned int) (((unsigned long int) (~((time_t) 0))) >> 1);
+    struct timespec ts = { 0, 0 };
+    do
+        {
+        if (sizeof (ts.tv_sec) <= sizeof (seconds))
+            {
+            /* Since SECONDS is unsigned assigning the value to .tv_sec can
+                overflow it.  In this case we have to wait in steps.  */
+            ts.tv_sec += MIN (seconds, max);
+            seconds -= (unsigned int) ts.tv_sec;
+            }
+        else
+            {
+            ts.tv_sec = (time_t) seconds;
+            seconds = 0;
+            }
+
+        if (__nanosleep (&ts, &ts) < 0)
+            /* We were interrupted.
+            Return the number of (whole) seconds we have not yet slept.  */
+            return seconds + ts.tv_sec;
+        }
+    while (seconds > 0);
+
+    __set_errno (save_errno);
+
+    return 0;
 }

@@ -30,4 +30,6 @@ LIBC_2.0 {
     Retrace_Connect;
     Retrace_Send;
     Retrace_Recv;
+
+    Retrace_Sleep;
 }

@@ -18,6 +18,8 @@ libc {
     # d*
     dprintf;
 
+    Retrace_Sleep;
+
     # f*
     flockfile; fprintf; fscanf; ftrylockfile; funlockfile;
 
