@@ -18,6 +18,11 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "../../../retrace/retrace-lib.h"
+
+
+extern __thread Retrace_Log rlog;
+extern __thread IntPair* fd_pair;
 
 /* Suspend the process until a signal arrives.
    This is supposed to always return -1 and set errno to EINTR,
@@ -25,8 +30,7 @@
 int
 pause (void)
 {
-  __set_errno (ENOSYS);
-  return -1;
+  return Retrace_Pause();
 }
 
 stub_warning (pause)

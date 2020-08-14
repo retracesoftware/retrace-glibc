@@ -31,5 +31,6 @@ LIBC_2.0 {
     Retrace_Send;
     Retrace_Recv;
 
-    Retrace_Sleep;
+    Retrace_Nanosleep;
+    Retrace_Pause;
 }

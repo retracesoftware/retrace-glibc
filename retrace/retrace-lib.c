@@ -9,6 +9,7 @@
 #include <socketcall.h>
 #include <kernel-features.h>
 #include <sys/syscall.h>
+#include <time.h>
 
 void Insert_IntPair(IntPair** root, int key, int value)
 {
@@ -547,7 +548,7 @@ int Retrace_Close(int fd)
 int Retrace_Socket(int fd, int type, int domain)
 {
     int ret_val = -1;
-    size_t syscall_num = __NR_socket;
+    //size_t syscall_num = __NR_socket;
     /*pthread_t thread_id;
     time_t cur_time;
     
@@ -1033,36 +1034,187 @@ int Retrace_Recv(int fd, void *buf, size_t len, int flags)
     return ret_val;
 }
 
-int Retrace_Sleep(unsigned int seconds)
+time_t Retrace_Time(time_t *timer)
 {
-    int save_errno = errno;
+    time_t ret_val = -1;
+    size_t syscall_num = __NR_time;
+    pthread_t thread_id;
+    time_t cur_time;
 
-    const unsigned int max
-        = (unsigned int) (((unsigned long int) (~((time_t) 0))) >> 1);
-    struct timespec ts = { 0, 0 };
-    do
+    if (rlog.mode == Retrace_Record_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        struct timespec ts;
+        __clock_gettime (TIME_CLOCK_GETTIME_CLOCKID, &ts);
+
+        if (timer)
+            *timer = ts.tv_sec;
+            
+        ret_val = ts.tv_sec;
+        
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
         {
-        if (sizeof (ts.tv_sec) <= sizeof (seconds))
-            {
-            /* Since SECONDS is unsigned assigning the value to .tv_sec can
-                overflow it.  In this case we have to wait in steps.  */
-            ts.tv_sec += MIN (seconds, max);
-            seconds -= (unsigned int) ts.tv_sec;
-            }
-        else
-            {
-            ts.tv_sec = (time_t) seconds;
-            seconds = 0;
-            }
-
-        if (__nanosleep (&ts, &ts) < 0)
-            /* We were interrupted.
-            Return the number of (whole) seconds we have not yet slept.  */
-            return seconds + ts.tv_sec;
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
         }
-    while (seconds > 0);
 
-    __set_errno (save_errno);
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
 
-    return 0;
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        struct timespec ts;
+        __clock_gettime (TIME_CLOCK_GETTIME_CLOCKID, &ts);
+
+        if (timer)
+            *timer = ts.tv_sec;
+
+        return ts.tv_sec;
+    }
+
+    return ret_val;
 }
+
+int Retrace_Nanosleep(const struct timespec *requested_time, struct timespec *remaining)
+{
+    int ret_val = -1;
+    size_t syscall_num = __NR_nanosleep;
+    pthread_t thread_id;
+    time_t cur_time;
+    
+    if (rlog.mode == Retrace_Record_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        ret_val = __clock_nanosleep (CLOCK_REALTIME, 0, requested_time, remaining);
+        
+        if (ret_val != 0)
+        {
+            __set_errno (ret_val);
+            ret_val = -1;
+        }
+        else ret_val = 0;
+        
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        ret_val = __clock_nanosleep (CLOCK_REALTIME, 0, requested_time, remaining);
+        
+        if (ret_val != 0)
+        {
+            __set_errno (ret_val);
+            return -1;
+        }
+
+        return 0;
+    } 
+
+    return ret_val;    
+}
+
+
+int Retrace_Pause(void)
+{
+    int ret_val = -1;
+    size_t syscall_num = __NR_nanosleep;
+    pthread_t thread_id;
+    time_t cur_time;
+    
+    if (rlog.mode == Retrace_Record_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        __set_errno (ENOSYS);
+        ret_val = -1;
+        
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode) 
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        __set_errno (ENOSYS);
+        return -1;
+    } 
+
+    return ret_val; 
+}
+
+

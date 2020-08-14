@@ -79,7 +79,8 @@ extern int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
 extern int Retrace_Send(int fd, const void *buf, size_t len, int flags);
 extern int Retrace_Recv(int fd, void *buf, size_t len, int flags);
 
-extern int Retrace_Sleep(unsigned int seconds);
-
+extern time_t Retrace_Time(time_t *timer);
+extern int Retrace_Nanosleep(const struct timespec *requested_time, struct timespec *remaining);
+extern int Retrace_Pause(void);
 
 #endif

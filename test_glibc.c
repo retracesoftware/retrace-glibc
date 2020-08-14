@@ -98,6 +98,7 @@ int check_socket()
     }
     else
     {
+        RLog_Init(&rlog, LOG_FILE, Retrace_Record_Mode);
         // Echo server
         int sock, listener;
         struct sockaddr_in addr;
@@ -142,6 +143,8 @@ int check_socket()
 
         shutdown(listener, SHUT_RDWR);
         close(listener);
+
+        RLog_Displose(&rlog);
     }
     
 
@@ -150,14 +153,18 @@ int check_socket()
 
 int check_sleep()
 {
-    printf("Time: %d\n", time(NULL));
+    RLog_Init(&rlog, LOG_FILE, Retrace_Replay_Mode);
+
+    printf("Time: %ld\n", time(NULL));
     sleep(1);
 
-    printf("Time: %d\n", time(NULL));
+    printf("Time: %ld\n", time(NULL));
     sleep(1);
 
-    printf("Time: %d\n", time(NULL));
+    printf("Time: %ld\n", time(NULL));
     sleep(1);
+
+    RLog_Displose(&rlog);
 }
 
 int main(void)
