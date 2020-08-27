@@ -50,6 +50,7 @@ extern int (*ptrRetraceSocket) (int fd, int type, int domain);
 extern int (*ptrRetraceBind) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
 extern int (*ptrRetraceListen) (int fd, int backlog);
 static int (*ptrRetraceAccept) (int fd, __SOCKADDR_ARG addr, socklen_t *len) = NULL;
+static int (*ptrRetraceConnect) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len) = NULL;
 
 void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
