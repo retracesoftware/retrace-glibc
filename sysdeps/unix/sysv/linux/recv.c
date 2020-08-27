@@ -19,6 +19,88 @@
 #include <sysdep-cancel.h>
 #include <socketcall.h>
 
+#include "../../../retrace/retrace-lib.h"
+
+int Retrace_Recv(int fd, void *buf, size_t len, int flags)
+{
+    int ret_val = -1;
+    size_t syscall_num = __NR_recvfrom;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        #ifdef __ASSUME_RECV_SYSCALL
+            ret_val = SYSCALL_CANCEL (recv, fd, buf, len, flags);
+        #elif defined __ASSUME_RECVFROM_SYSCALL
+            ret_val = SYSCALL_CANCEL (recvfrom, fd, buf, len, flags, NULL, NULL);
+        #else
+            return SOCKETCALL_CANCEL (recv, fd, buf, len, flags);
+        #endif
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        IntPair* pair = Find_IntPair(sock_pair, fd);
+
+        if(NULL == pair)
+        {
+            fprintf(stderr, "%s(), IntPair doesn't found!\n", __func__);
+            abort();
+        }
+
+        if(len != write(pair->value, buf, len))
+        {
+            fprintf(stderr, "Write error!\n");
+            abort();
+        }
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        ret_val = SYSCALL_CANCEL (read, fd, buf, len);
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        #ifdef __ASSUME_RECV_SYSCALL
+            return SYSCALL_CANCEL (recv, fd, buf, len, flags);
+        #elif defined __ASSUME_RECVFROM_SYSCALL
+            return SYSCALL_CANCEL (recvfrom, fd, buf, len, flags, NULL, NULL);
+        #else
+            return SOCKETCALL_CANCEL (recv, fd, buf, len, flags);
+        #endif
+    }
+
+    return ret_val;
+}
+
+
 ssize_t
 __libc_recv (int fd, void *buf, size_t len, int flags)
 {
