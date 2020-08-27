@@ -23,13 +23,81 @@
 #include <kernel-features.h>
 #include <sys/syscall.h>
 
+#include "../../../retrace/retrace-lib.h"
+
+__thread Retrace_Log rlog;
+__thread IntPair* sock_pair = NULL;
+
+int Retrace_Listen(int fd, int backlog)
+{
+    int ret_val = -1;
+    size_t syscall_num = __NR_listen;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        #ifdef __ASSUME_LISTEN_SYSCALL
+            ret_val = INLINE_SYSCALL (listen, 2, fd, backlog);
+        #else
+            ret_val = SOCKETCALL (listen, fd, backlog);
+        #endif
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        #ifdef __ASSUME_LISTEN_SYSCALL
+            return INLINE_SYSCALL (listen, 2, fd, backlog);
+        #else
+            return SOCKETCALL (listen, fd, backlog);
+        #endif
+    }
+
+    return ret_val;
+}
+
 int
 listen (int fd, int backlog)
 {
-#ifdef __ASSUME_LISTEN_SYSCALL
-  return INLINE_SYSCALL (listen, 2, fd, backlog);
-#else
-  return SOCKETCALL (listen, fd, backlog);
-#endif
+    if (ptrRetraceListen == NULL) {
+        #ifdef __ASSUME_LISTEN_SYSCALL
+          return INLINE_SYSCALL (listen, 2, fd, backlog);
+        #else
+          return SOCKETCALL (listen, fd, backlog);
+        #endif
+    } else {
+        return ptrRetraceListen(fd,backlog);
+    }
 }
 weak_alias (listen, __listen);

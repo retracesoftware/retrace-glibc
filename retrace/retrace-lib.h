@@ -14,7 +14,7 @@
 #include <sys/uio.h>
 #include <time.h>
 #include <stdarg.h>
-
+#include <sys/socket.h>
 #define LOG_FILE "log.dat"
 #define RETRACE_DIR ".retrace/"
 
@@ -43,8 +43,10 @@ typedef struct IntPair
 } IntPair;
 
 pthread_mutex_t rmutex;
-int (*ptrRetraceSocket) (int fd, int type, int domain);
-int (*ptrRetraceBind) (int fd, int type, int domain);
+extern int (*ptrRetraceSocket) (int fd, int type, int domain);
+extern int (*ptrRetraceBind) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
+extern int (*ptrRetraceListen) (int fd, int backlog);
+
 void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
 void Deallocate_IntPairs(IntPair** root);
