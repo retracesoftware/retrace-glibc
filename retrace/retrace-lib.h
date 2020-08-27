@@ -44,13 +44,14 @@ typedef struct IntPair
 
 pthread_mutex_t rmutex;
 extern  __thread Retrace_Log rlog;
-extern __thread IntPair* sock_pair;
+static __thread IntPair* sock_pair = NULL;
 
 extern int (*ptrRetraceSocket) (int fd, int type, int domain);
 extern int (*ptrRetraceBind) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
 extern int (*ptrRetraceListen) (int fd, int backlog);
 static int (*ptrRetraceAccept) (int fd, __SOCKADDR_ARG addr, socklen_t *len) = NULL;
 static int (*ptrRetraceConnect) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len) = NULL;
+static int (*ptrRetraceSend) (int fd, const void *buf, size_t len, int flags) = NULL;
 
 void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
