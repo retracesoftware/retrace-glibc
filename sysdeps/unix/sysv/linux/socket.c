@@ -21,6 +21,7 @@
 #include <socketcall.h>
 #include <kernel-features.h>
 #include <sys/syscall.h>
+
 #include "../../../retrace/retrace-lib.h"
 
 __thread Retrace_Log rlog;
@@ -121,7 +122,7 @@ int Retrace_Socket(int fd, int type, int domain)
 int
 __socket (int fd, int type, int domain)
 {
-    if (retraceSocketPtr == NULL) {
+    if (ptrRetraceSocket == NULL) {
     #ifdef __ASSUME_SOCKET_SYSCALL
       return INLINE_SYSCALL (socket, 3, fd, type, domain);
     #else
@@ -129,7 +130,7 @@ __socket (int fd, int type, int domain)
     #endif
     }
     else
-       return retraceSocketPtr(fd,type,domain);
+       return ptrRetraceSocket(fd,type,domain);
 
 }
 

@@ -43,7 +43,8 @@ typedef struct IntPair
 } IntPair;
 
 pthread_mutex_t rmutex;
-int (*retraceSocketPtr) (int fd, int type, int domain);
+int (*ptrRetraceSocket) (int fd, int type, int domain);
+int (*ptrRetraceBind) (int fd, int type, int domain);
 void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
 void Deallocate_IntPairs(IntPair** root);
