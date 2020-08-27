@@ -1,6 +1,5 @@
-
-#if !defined(RETRACE_LIB_H)
-#define RETRACE_LIB_H
+#ifndef RETRACE_LIB_H
+#define RETRACE_LIB_H 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +43,7 @@ typedef struct IntPair
 } IntPair;
 
 pthread_mutex_t rmutex;
-
+int (*retraceSocketPtr) (int fd, int type, int domain);
 void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
 void Deallocate_IntPairs(IntPair** root);
@@ -65,6 +64,7 @@ extern int Retrace_Read(int fd, void* buffer, size_t len);
 extern int Retrace_Write(int fd, const void* buffer, size_t len);
 extern int Retrace_Open64(const char *file, int oflag, int mode);
 extern int Retrace_Close(int fd);
+
 
 
 #endif
