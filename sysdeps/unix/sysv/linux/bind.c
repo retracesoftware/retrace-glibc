@@ -25,8 +25,6 @@
 
 #include "../../../retrace/retrace-lib.h"
 
-__thread Retrace_Log rlog;
-__thread IntPair* sock_pair = NULL;
 
 int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {

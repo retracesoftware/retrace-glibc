@@ -24,9 +24,6 @@
 
 #include "../../../retrace/retrace-lib.h"
 
-__thread Retrace_Log rlog;
-__thread IntPair* sock_pair = NULL;
-
 
 int Retrace_Socket(int fd, int type, int domain)
 {
