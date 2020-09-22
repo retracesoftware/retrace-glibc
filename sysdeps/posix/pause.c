@@ -20,21 +20,29 @@
 #include <unistd.h>
 #include <sysdep-cancel.h>
 #include <sigsetops.h>
+#include "../../../retrace/retrace-lib.h"
 
+
+extern __thread Retrace_Log rlog;
+extern __thread IntPair* fd_pair;
 /* Suspend the process until a signal arrives.
    This always returns -1 and sets errno to EINTR.  */
 
 int
 __libc_pause (void)
 {
+    /*
   sigset_t set;
 
   __sigemptyset (&set);
   __sigprocmask (SIG_BLOCK, NULL, &set);
 
-  /* pause is a cancellation point, but so is sigsuspend.
-     So no need for anything special here.  */
+  // pause is a cancellation point, but so is sigsuspend.
+    // So no need for anything special here.
 
   return __sigsuspend (&set);
+  */
+
+    return Retrace_Pause();
 }
 weak_alias (__libc_pause, pause)

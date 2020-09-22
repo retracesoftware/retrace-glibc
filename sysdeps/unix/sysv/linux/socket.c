@@ -24,6 +24,7 @@
 
 #include "../../../retrace/retrace-lib.h"
 
+extern int (*ptrRetraceSocket) (int fd, int type, int domain) = NULL;
 
 int Retrace_Socket(int fd, int type, int domain)
 {
@@ -115,6 +116,7 @@ int Retrace_Socket(int fd, int type, int domain)
 
     return ret_val;
 }
+
 
 int
 __socket (int fd, int type, int domain)

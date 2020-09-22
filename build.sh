@@ -3,5 +3,6 @@
 mkdir build
 cd build
 ../configure --prefix "$glibc_install" --disable-werror
-make -j4
+#make -k 
+make -j8
 make install

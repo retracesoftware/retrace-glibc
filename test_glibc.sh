@@ -2,6 +2,7 @@
 set -eux
 gcc \
   -L "${glibc_install}/lib" \
+  -static \
   -I "${glibc_install}/include" \
   -Wl,--rpath="${glibc_install}/lib" \
   -Wl,--dynamic-linker="${glibc_install}/lib/ld-linux-x86-64.so.2" \
@@ -13,3 +14,5 @@ gcc \
 ;
 ldd ./test_glibc.out
 ./test_glibc.out
+
+  #-L /home/nika/src/retrace-glibc/build/install/lib/libc.a \

@@ -25,6 +25,8 @@
 
 #include "../../../retrace/retrace-lib.h"
 
+extern int (*ptrRetraceListen) (int fd, int backlog) = NULL;
+
 int Retrace_Listen(int fd, int backlog)
 {
     int ret_val = -1;

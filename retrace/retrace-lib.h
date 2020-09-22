@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <sys/uio.h>
 #include <time.h>
+#include <sys/time.h>
 #include <stdarg.h>
 #include <sys/socket.h>
 #define LOG_FILE "log.dat"
@@ -47,12 +48,27 @@ extern  __thread Retrace_Log rlog;
 static __thread IntPair* sock_pair = NULL;
 
 extern int (*ptrRetraceSocket) (int fd, int type, int domain);
+extern int Retrace_Socket(int fd, int type, int domain);
+//extern int (*ptrRetraceSocket) (int domain, int type, int protocol);
+//extern int Retrace_Socket(int domain, int type, int protocol);
+
 extern int (*ptrRetraceBind) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
+extern int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
+
 extern int (*ptrRetraceListen) (int fd, int backlog);
-static int (*ptrRetraceAccept) (int fd, __SOCKADDR_ARG addr, socklen_t *len) = NULL;
-static int (*ptrRetraceConnect) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len) = NULL;
-static int (*ptrRetraceSend) (int fd, const void *buf, size_t len, int flags) = NULL;
-static int (*ptrRetraceRecv) (int fd, const void *buf, size_t len, int flags) = NULL;
+extern int Retrace_Listen(int fd, int backlog);
+
+extern int (*ptrRetraceAccept) (int fd, __SOCKADDR_ARG addr, socklen_t *len);
+extern int Retrace_Accept(int fd, __SOCKADDR_ARG addr, socklen_t *len);
+
+extern int (*ptrRetraceConnect) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
+extern int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len);
+
+extern int (*ptrRetraceSend) (int fd, const void *buf, size_t len, int flags);
+extern int Retrace_Send(int fd, const void *buf, size_t len, int flags);
+
+extern int (*ptrRetraceRecv) (int fd, const void *buf, size_t len, int flags);
+extern int Retrace_Recv(int fd, void *buf, size_t len, int flags);
 
 void Insert_IntPair(IntPair** root, int key, int value);
 IntPair* Find_IntPair(IntPair* tail, int key);
@@ -75,6 +91,10 @@ extern int Retrace_Write(int fd, const void* buffer, size_t len);
 extern int Retrace_Open64(const char *file, int oflag, int mode);
 extern int Retrace_Close(int fd);
 
-
-
+extern time_t Retrace_Time(time_t *timer);
+extern int Retrace_Nanosleep(const struct timespec *requested_time, struct timespec *remaining);
+extern int Retrace_Pause(void);
+extern int Retrace_Getitimer64 (__itimer_which_t which, struct __itimerval64 *curr_value);
+extern int Retrace_Setitimer64 (__itimer_which_t which, const struct __itimerval64 *restrict new_value, struct __itimerval64 *restrict old_value);
+int Retrace_Gettimeofday64 (struct __timeval64 *restrict tv, void *restrict tz);
 #endif

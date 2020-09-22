@@ -2,6 +2,11 @@
 #include "retrace-lib.h"
 
 #include <sysdep-cancel.h>
+#include <socketcall.h>
+#include <kernel-features.h>
+#include <sys/syscall.h>
+
+#include <time.h>
 
 void Insert_IntPair(IntPair** root, int key, int value)
 {
@@ -53,6 +58,7 @@ void Deallocate_IntPairs(IntPair** root)
     
     *root = NULL;
 }
+
 
 
 void RLog_Init(Retrace_Log* log, char* path, Retrace_Mode mode)
@@ -233,7 +239,22 @@ size_t Record_Args(Retrace_Log* rlog, int arg_num, ...)
     return EXIT_SUCCESS;
 }
 
+void Check_Dir(const char* dir_name)
+{
+    struct stat stats;
+    stat(dir_name, &stats);
 
+    if (!S_ISDIR(stats.st_mode))
+    {
+        if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+        {
+            fprintf(stderr, "Cannot create %s dir\n", dir_name);
+            abort();
+        }
+    }
+}
+
+//file
 int Retrace_Read(int fd, void* buffer, size_t len)
 {
     int ret_val = -1;
@@ -297,7 +318,6 @@ int Retrace_Read(int fd, void* buffer, size_t len)
     
     return ret_val;
 }
-
 int Retrace_Open64(const char *file, int oflag, int mode)
 {
     #ifdef __OFF_T_MATCHES_OFF64_T
@@ -399,7 +419,6 @@ int Retrace_Open64(const char *file, int oflag, int mode)
 
     return ret_val;
 }
-
 int Retrace_Write(int fd, const void* buffer, size_t len)
 {
     int ret_val = -1;
@@ -466,7 +485,6 @@ int Retrace_Write(int fd, const void* buffer, size_t len)
 
     return ret_val;
 }
-
 int Retrace_Close(int fd)
 {
     pthread_t thread_id = 0;
@@ -531,4 +549,433 @@ int Retrace_Close(int fd)
     return ret_val;
 }
 
- 
+
+//time
+time_t Retrace_Time(time_t *timer)
+{
+    time_t ret_val = -1;
+    size_t syscall_num = __NR_time;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        struct timespec ts;
+        __clock_gettime (TIME_CLOCK_GETTIME_CLOCKID, &ts);
+
+        if (timer)
+            *timer = ts.tv_sec;
+
+        ret_val = ts.tv_sec;
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        struct timespec ts;
+        __clock_gettime (TIME_CLOCK_GETTIME_CLOCKID, &ts);
+
+        if (timer)
+            *timer = ts.tv_sec;
+
+        return ts.tv_sec;
+    }
+
+    return ret_val;
+}
+int Retrace_Nanosleep(const struct timespec *requested_time, struct timespec *remaining)
+{
+    int ret_val = -1;
+    size_t syscall_num = __NR_nanosleep;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        ret_val = __clock_nanosleep (CLOCK_REALTIME, 0, requested_time, remaining);
+
+        if (ret_val != 0)
+        {
+            __set_errno (ret_val);
+            ret_val = -1;
+        }
+        else ret_val = 0;
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        ret_val = __clock_nanosleep (CLOCK_REALTIME, 0, requested_time, remaining);
+
+        if (ret_val != 0)
+        {
+            __set_errno (ret_val);
+            return -1;
+        }
+
+        return 0;
+    }
+
+    return ret_val;
+}
+int Retrace_Pause(void)
+{
+    int ret_val = -1;
+    size_t syscall_num = __NR_nanosleep;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        __set_errno (ENOSYS);
+        ret_val = -1;
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        __set_errno (ENOSYS);
+        return -1;
+    }
+
+    return ret_val;
+}
+int Retrace_Getitimer64 (__itimer_which_t which, struct __itimerval64 *curr_value) {
+
+    int ret_val = -1;
+    size_t syscall_num = __NR_nanosleep;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        #if __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64
+          ret_val =  INLINE_SYSCALL_CALL (getitimer, which, curr_value);
+        #else
+          struct __itimerval32 curr_value_32;
+
+          if (INLINE_SYSCALL_CALL (getitimer, which, &curr_value_32) == -1)
+            ret_val =  -1;
+
+          curr_value->it_interval
+            = valid_timeval32_to_timeval64 (curr_value_32.it_interval);
+          curr_value->it_value
+            = valid_timeval32_to_timeval64 (curr_value_32.it_value);
+          ret_val =  0;
+        #endif
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        #if __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64
+          ret_val =  INLINE_SYSCALL_CALL (getitimer, which, curr_value);
+        #else
+          struct __itimerval32 curr_value_32;
+
+          if (INLINE_SYSCALL_CALL (getitimer, which, &curr_value_32) == -1)
+            ret_val =  -1;
+
+          curr_value->it_interval
+            = valid_timeval32_to_timeval64 (curr_value_32.it_interval);
+          curr_value->it_value
+            = valid_timeval32_to_timeval64 (curr_value_32.it_value);
+          ret_val =  0;
+        #endif
+    }
+
+    return ret_val;
+}
+int Retrace_Setitimer64 (__itimer_which_t which, const struct __itimerval64 *restrict new_value, struct __itimerval64 *restrict old_value) {
+    int ret_val = -1;
+    size_t syscall_num = __NR_nanosleep;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        #if __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64
+          ret_val = INLINE_SYSCALL_CALL (setitimer, which, new_value, old_value);
+        #else
+          struct __itimerval32 new_value_32;
+
+          if (! in_time_t_range (new_value->it_interval.tv_sec)
+              || ! in_time_t_range (new_value->it_value.tv_sec))
+            {
+              __set_errno (EOVERFLOW);
+              return -1;
+            }
+          new_value_32.it_interval
+            = valid_timeval64_to_timeval32 (new_value->it_interval);
+          new_value_32.it_value
+            = valid_timeval64_to_timeval32 (new_value->it_value);
+
+          if (old_value == NULL)
+            ret_val = INLINE_SYSCALL_CALL (setitimer, which, &new_value_32, NULL);
+
+          struct __itimerval32 old_value_32;
+          if (INLINE_SYSCALL_CALL (setitimer, which, &new_value_32, &old_value_32)
+              == -1)
+            ret_val -1;
+
+          old_value->it_interval
+             = valid_timeval32_to_timeval64 (old_value_32.it_interval);
+          old_value->it_value
+             = valid_timeval32_to_timeval64 (old_value_32.it_value);
+          ret_val 0;
+        #endif
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        #if __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64
+          ret_val = INLINE_SYSCALL_CALL (setitimer, which, new_value, old_value);
+        #else
+          struct __itimerval32 new_value_32;
+
+          if (! in_time_t_range (new_value->it_interval.tv_sec)
+              || ! in_time_t_range (new_value->it_value.tv_sec))
+            {
+              __set_errno (EOVERFLOW);
+              return -1;
+            }
+          new_value_32.it_interval
+            = valid_timeval64_to_timeval32 (new_value->it_interval);
+          new_value_32.it_value
+            = valid_timeval64_to_timeval32 (new_value->it_value);
+
+          if (old_value == NULL)
+            ret_val = INLINE_SYSCALL_CALL (setitimer, which, &new_value_32, NULL);
+
+          struct __itimerval32 old_value_32;
+          if (INLINE_SYSCALL_CALL (setitimer, which, &new_value_32, &old_value_32)
+              == -1)
+            ret_val -1;
+
+          old_value->it_interval
+             = valid_timeval32_to_timeval64 (old_value_32.it_interval);
+          old_value->it_value
+             = valid_timeval32_to_timeval64 (old_value_32.it_value);
+          ret_val 0;
+        #endif
+     }
+
+    return ret_val;
+}
+
+int Retrace_Gettimeofday64 (struct __timeval64 *restrict tv, void *restrict tz) {
+    int ret_val = -1;
+    size_t syscall_num = __NR_nanosleep;
+    pthread_t thread_id;
+    time_t cur_time;
+
+    if (rlog.mode == Retrace_Record_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        if (__glibc_unlikely (tz != 0))
+            memset (tz, 0, sizeof (struct timezone));
+
+        struct __timespec64 ts64;
+        if (__clock_gettime64 (CLOCK_REALTIME, &ts64))
+            ret_val = -1;
+
+        *tv = timespec64_to_timeval64 (ts64);
+        ret_val = 0;
+
+        thread_id = pthread_self();
+        cur_time = time(NULL);
+
+        RLog_Push(&rlog, &syscall_num, sizeof(syscall_num));
+        RLog_Push(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Push(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Push(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Record_Mode;
+    }
+    else if (rlog.mode == Retrace_Replay_Mode)
+    {
+        rlog.mode = Retrace_Disabled_Mode;
+
+        size_t fetched_syscall;
+
+        RLog_Fetch(&rlog, &fetched_syscall, sizeof(fetched_syscall));
+
+        if(fetched_syscall != syscall_num)
+        {
+            fprintf(stderr, "Fetched syscall not equal to current one!\n");
+            abort();
+        }
+
+        RLog_Fetch(&rlog, &thread_id, sizeof(pthread_t));
+        RLog_Fetch(&rlog, &cur_time, sizeof(cur_time));
+        RLog_Fetch(&rlog, &ret_val, sizeof(ret_val));
+
+        rlog.mode = Retrace_Replay_Mode;
+    }
+    else
+    {
+        if (__glibc_unlikely (tz != 0))
+            memset (tz, 0, sizeof (struct timezone));
+
+        struct __timespec64 ts64;
+        if (__clock_gettime64 (CLOCK_REALTIME, &ts64))
+            ret_val = -1;
+
+        *tv = timespec64_to_timeval64 (ts64);
+        ret_val = 0;
+    }
+
+    return ret_val;
+}

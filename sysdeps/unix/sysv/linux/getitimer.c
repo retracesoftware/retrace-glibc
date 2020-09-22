@@ -22,23 +22,12 @@
 #include <sysdep.h>
 #include <tv32-compat.h>
 
+#include "../../../retrace/retrace-lib.h"
+
 int
 __getitimer64 (__itimer_which_t which, struct __itimerval64 *curr_value)
 {
-#if __KERNEL_OLD_TIMEVAL_MATCHES_TIMEVAL64
-  return INLINE_SYSCALL_CALL (getitimer, which, curr_value);
-#else
-  struct __itimerval32 curr_value_32;
-
-  if (INLINE_SYSCALL_CALL (getitimer, which, &curr_value_32) == -1)
-    return -1;
-
-  curr_value->it_interval
-    = valid_timeval32_to_timeval64 (curr_value_32.it_interval);
-  curr_value->it_value
-    = valid_timeval32_to_timeval64 (curr_value_32.it_value);
-  return 0;
-#endif
+    return Retrace_Getitimer64(which,curr_value);
 }
 
 #if __TIMESIZE != 64

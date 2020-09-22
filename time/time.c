@@ -17,15 +17,11 @@
 
 #include <time.h>
 #include <time-clockid.h>
+#include "../../../retrace/retrace-lib.h"
 
 /* Return the time now, and store it in *TIMER if not NULL.  */
 time_t
 time (time_t *timer)
 {
-  struct timespec ts;
-  __clock_gettime (TIME_CLOCK_GETTIME_CLOCKID, &ts);
-
-  if (timer)
-    *timer = ts.tv_sec;
-  return ts.tv_sec;
+    return Retrace_Time(timer);
 }

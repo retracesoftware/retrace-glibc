@@ -25,10 +25,11 @@
 
 #include "../../../retrace/retrace-lib.h"
 
+extern int (*ptrRetraceBind) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len) = NULL;
 
 int Retrace_Bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
-    int ret_val = -1;
+    int ret_val = -1
     size_t syscall_num = __NR_bind;
     pthread_t thread_id;
     time_t cur_time;

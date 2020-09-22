@@ -21,6 +21,8 @@
 
 #include "../../../retrace/retrace-lib.h"
 
+extern int (*ptrRetraceConnect) (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len) = NULL;
+
 int Retrace_Connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
     int ret_val = -1;

@@ -21,9 +21,10 @@
 
 #include "../../../retrace/retrace-lib.h"
 
-
+extern  int (*ptrRetraceAccept) (int fd, __SOCKADDR_ARG addr, socklen_t *len) = NULL;
 int Retrace_Accept(int fd, __SOCKADDR_ARG addr, socklen_t *len)
 {
+    printf("accept");
     int ret_val = -1;
     size_t syscall_num = __NR_accept;
     pthread_t thread_id;
@@ -89,6 +90,7 @@ int
 __libc_accept (int fd, __SOCKADDR_ARG addr, socklen_t *len)
 {
      if (ptrRetraceAccept == NULL) {
+         printf("!retracesocket");
         #ifdef __ASSUME_ACCEPT_SYSCALL
           return SYSCALL_CANCEL (accept, fd, addr.__sockaddr__, len);
         #elif defined __ASSUME_ACCEPT4_SYSCALL

@@ -58,18 +58,12 @@ weak_alias (__gettimeofday, gettimeofday)
    with __WORDSIZE == 32 and __TIMESIZE == 32/64  */
 #include <errno.h>
 
+#include "../../../retrace/retrace-lib.h"
+
 int
 __gettimeofday64 (struct __timeval64 *restrict tv, void *restrict tz)
 {
-  if (__glibc_unlikely (tz != 0))
-    memset (tz, 0, sizeof (struct timezone));
-
-  struct __timespec64 ts64;
-  if (__clock_gettime64 (CLOCK_REALTIME, &ts64))
-	  return -1;
-
-  *tv = timespec64_to_timeval64 (ts64);
-  return 0;
+    return Retrace_Gettimeofday64(tv,tz);
 }
 
 # if __TIMESIZE != 64

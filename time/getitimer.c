@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <errno.h>
 #include <sys/time.h>
+#include "../../../retrace/retrace-lib.h"
 
 /* Set *VALUE to the current setting of timer WHICH.
    Return 0 on success, -1 on errors.  */

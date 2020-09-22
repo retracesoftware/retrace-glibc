@@ -21,6 +21,8 @@
 
 #include "../../../retrace/retrace-lib.h"
 
+extern int (*ptrRetraceRecv) (int fd, const void *buf, size_t len, int flags) = NULL;
+
 int Retrace_Recv(int fd, void *buf, size_t len, int flags)
 {
     int ret_val = -1;
@@ -104,13 +106,18 @@ int Retrace_Recv(int fd, void *buf, size_t len, int flags)
 ssize_t
 __libc_recv (int fd, void *buf, size_t len, int flags)
 {
-#ifdef __ASSUME_RECV_SYSCALL
-  return SYSCALL_CANCEL (recv, fd, buf, len, flags);
-#elif defined __ASSUME_RECVFROM_SYSCALL
-  return SYSCALL_CANCEL (recvfrom, fd, buf, len, flags, NULL, NULL);
-#else
-  return SOCKETCALL_CANCEL (recv, fd, buf, len, flags);
-#endif
+  if(ptrRetraceRecv == NULL)  {
+    #ifdef __ASSUME_RECV_SYSCALL
+      return SYSCALL_CANCEL (recv, fd, buf, len, flags);
+    #elif defined __ASSUME_RECVFROM_SYSCALL
+      return SYSCALL_CANCEL (recvfrom, fd, buf, len, flags, NULL, NULL);
+    #else
+      return SOCKETCALL_CANCEL (recv, fd, buf, len, flags);
+    #endif
+  } else {
+      return ptrRetraceRecv(fd, buf, len, flags);
+  }
+
 }
 weak_alias (__libc_recv, recv)
 weak_alias (__libc_recv, __recv)

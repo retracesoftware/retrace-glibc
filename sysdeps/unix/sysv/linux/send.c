@@ -21,6 +21,8 @@
 
 #include "../../../retrace/retrace-lib.h"
 
+extern int (*ptrRetraceSend) (int fd, const void *buf, size_t len, int flags) = NULL;
+
 int Retrace_Send(int fd, const void *buf, size_t len, int flags)
 {
     int ret_val = -1;

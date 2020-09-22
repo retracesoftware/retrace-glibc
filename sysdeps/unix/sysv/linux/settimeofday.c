@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/time.h>
+#include "../../../retrace/retrace-lib.h"
 
 /* Set the current time of day and timezone information.
    This call is restricted to the super-user.  */
