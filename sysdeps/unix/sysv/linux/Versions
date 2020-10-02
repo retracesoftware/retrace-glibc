@@ -1,5 +1,10 @@
 libc {
   GLIBC_2.0 {
+
+    
+    syscall_open;
+    default_syscall_open;
+
     # functions used in inline functions or macros
     __cmsg_nxthdr;
 

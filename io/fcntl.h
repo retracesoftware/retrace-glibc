@@ -329,6 +329,9 @@ extern int posix_fallocate64 (int __fd, off64_t __offset, off64_t __len);
 # include <bits/fcntl2.h>
 #endif
 
+
+extern __thread int (* syscall_open)(const char *,int, int);
+
 __END_DECLS
 
 #endif /* fcntl.h  */

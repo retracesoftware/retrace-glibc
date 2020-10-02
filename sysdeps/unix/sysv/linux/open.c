@@ -26,6 +26,14 @@
 
 #ifndef __OFF_T_MATCHES_OFF64_T
 
+/* Define and initialize the hook variables.  These weak definitions must
+ *    appear before any use of the variables in a function (arena.c uses one).  */
+#ifndef weak_variable
+/* In GNU libc we want the hook variables to be weak definitions to
+ *    avoid a problem with Emacs.  */
+# define weak_variable weak_function
+#endif
+
 /* Open FILE with access OFLAG.  If O_CREAT or O_TMPFILE is in OFLAG,
    a third argument is the file protection.  */
 int
@@ -43,6 +51,9 @@ __libc_open (const char *file, int oflag, ...)
 
   return SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag, mode);
 }
+
+__thread weak_variable int (* syscall_open)(const char *,int, ...) = __libc_open;
+
 libc_hidden_def (__libc_open)
 
 weak_alias (__libc_open, __open)

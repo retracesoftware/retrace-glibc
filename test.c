@@ -1,15 +1,15 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-int (* current)(const char *,int, ...);
+int (* current)(const char *,int, int);
 
 extern void *(* __malloc_hook)(size_t __size, const void *);
 
-int patched(const char *file, int oflag, ...) {
+int patched(const char *file, int oflag, int mode) {
 
 	printf("In patched open()\n");
 
-	return current(file, oflag);
+	return current(file, oflag, mode);
 }
 
 int main() {
