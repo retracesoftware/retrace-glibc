@@ -1,5 +1,6 @@
 steps:
 - name: gcc:latest
+  entrypoint: /bin/bash
   args: ['./build.sh']
   env: ['glibc_install=/workspace/build/install']
 
