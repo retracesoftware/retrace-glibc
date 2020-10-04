@@ -1,5 +1,5 @@
 steps:
-- name: build-container:0.1
+- name: build-container:0.2
   args: ['./build.sh']
   env: ['glibc_install=/workspace/build/install']
 - name: build-container:0.1
