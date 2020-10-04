@@ -1,9 +1,10 @@
 steps:
 - name: gcr.io/$PROJECT_ID/build-container:0.2
-  args: ['./build.sh']
+  #  args: ['./build.sh']
+  args: ['touch f']
   env: ['glibc_install=/workspace/build/install']
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/retrace-glibc:0.1', '.' ]
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/retrace-glibc:0.1', '.' ]
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/retrace-glibc']
   #artifacts:
