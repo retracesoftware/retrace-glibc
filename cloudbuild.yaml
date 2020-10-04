@@ -1,9 +1,9 @@
 steps:
-- name: gcc:latest
-  entrypoint: /bin/bash
+- name: build-container:0.1
   args: ['./build.sh']
   env: ['glibc_install=/workspace/build/install']
-
+- name: build-container:0.1
+  args: ['tar -czf install.tar.gz -C /workspace/build/install .']
 artifacts:
   objects:
     location: 'gs://glibc-cloudbuild'

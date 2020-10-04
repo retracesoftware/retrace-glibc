@@ -8,6 +8,3 @@ cd build
 make -j4
 make install
 
-tar -czf install.tar.gz -C "$glibc_install" .
-
-exit
