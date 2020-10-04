@@ -4,7 +4,7 @@ steps:
   args: ['bash', '-c', 'touch f']
   env: ['glibc_install=/workspace/build/install']
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/focus-dragon-270919/retrace-glibc:0.1', '.' ]
+  args: ['build', '-t', 'gcr.io/focus-dragon-270919/retrace-glibc', '.' ]
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/retrace-glibc']
   #artifacts:
