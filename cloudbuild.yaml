@@ -8,4 +8,4 @@ artifacts:
   objects:
     location: 'gs://glibc-cloudbuild'
     paths: ['install.tar.gz']
-
+timeout: 1800s
