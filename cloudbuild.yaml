@@ -2,7 +2,7 @@ steps:
 - name: gcr.io/$PROJECT_ID/build-container:0.2
   args: ['./build.sh']
   env: ['glibc_install=/workspace/build/install']
-- name: build-container:0.1
+- name: gcr.io/$PROJECT_ID/build-container:0.2
   args: ['tar -czf install.tar.gz -C /workspace/build/install .']
 artifacts:
   objects:
