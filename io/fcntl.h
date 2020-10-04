@@ -331,6 +331,7 @@ extern int posix_fallocate64 (int __fd, off64_t __offset, off64_t __len);
 
 
 extern __thread int (* syscall_open)(const char *,int, int);
+extern __thread int (* syscall_close)(int);
 
 __END_DECLS
 

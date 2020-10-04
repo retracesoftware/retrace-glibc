@@ -20,11 +20,20 @@
 #include <sysdep-cancel.h>
 #include <not-cancel.h>
 
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+
 /* Close the file descriptor FD.  */
+int default_syscall_close (int fd) {
+      return SYSCALL_CANCEL (close, fd);
+}
+__thread int weak_function (* syscall_close)(int) = default_syscall_close;
 int
 __close (int fd)
 {
-  return SYSCALL_CANCEL (close, fd);
+    return syscall_close(fd);
 }
 libc_hidden_def (__close)
 strong_alias (__close, __libc_close)
