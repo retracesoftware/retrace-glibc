@@ -23,6 +23,7 @@ int patched(const char *file, int oflag, int mode) {
 	return current(file, oflag, mode);
 }
 
+
 int main() {
 
 	void * (* test)(size_t, const void *) = __malloc_hook;
