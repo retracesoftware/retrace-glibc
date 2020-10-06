@@ -5,6 +5,7 @@
 
 int (* syshook_open)(const char *,int, int);
 int (* syshook_close)(int);
+ssize_t (* syshook_read)(int,void *,size_t);
 
 extern void *(* __malloc_hook)(size_t __size, const void *);
 
@@ -21,6 +22,14 @@ int patched_close(int fd) {
 
     return syshook_close(fd);
 }
+ssize_t patched_read(int fd, void *buf, size_t nbytes) {
+
+    printf("In patched read()\n");
+
+    return syshook_read(fd,buf,nbytes);
+}
+
+
 
 int main() {
 
@@ -35,6 +44,9 @@ int main() {
 	printf ("%i\n", f);
 
 	FILE * fp = fopen("/dev/null", "rb");
+
+    syshook_read = syscall_read;
+    syscall_read = patched_read;
 
     syshook_close = syscall_close;
     syscall_close = patched_close;

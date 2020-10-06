@@ -1188,4 +1188,6 @@ int getentropy (void *__buffer, size_t __length) __wur
 
 __END_DECLS
 
+
+extern __thread ssize_t (* syscall_read)(int,void *,size_t);
 #endif /* unistd.h  */

@@ -194,8 +194,5 @@ extern int __getlogin_r_loginuid (char *name, size_t namesize)
 #   include <dl-unistd.h>
 #  endif
 
-extern __thread ssize_t (* syscall_read)(int,void *,size_t);
-
-
 # endif
 #endif
