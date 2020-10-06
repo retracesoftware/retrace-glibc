@@ -27,6 +27,7 @@ ssize_t default_syscall_read(int fd, void *buf, size_t nbytes)
 {
      return SYSCALL_CANCEL (read, fd, buf, nbytes);
 }
+__thread weak_variable ssize_t (* syscall_read)(int,void *,size_t) = default_syscall_read;
 
 /* Read NBYTES into BUF from FD.  Return the number read or -1.  */
 ssize_t
@@ -34,7 +35,6 @@ __libc_read (int fd, void *buf, size_t nbytes)
 {
   return syscall_read (fd, buf, nbytes);
 }
-__thread weak_variable ssize_t (* syscall_read)(int,void *,size_t) = default_syscall_read;
 
 libc_hidden_def (__libc_read)
 

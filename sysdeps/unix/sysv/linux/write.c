@@ -19,12 +19,23 @@
 #include <unistd.h>
 #include <sysdep-cancel.h>
 
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+ssize_t default_syscall_write(int fd, const void *buf, size_t nbytes)
+{
+     return SYSCALL_CANCEL (write, fd, buf, nbytes);
+}
+
 /* Write NBYTES of BUF to FD.  Return the number written, or -1.  */
 ssize_t
 __libc_write (int fd, const void *buf, size_t nbytes)
 {
-  return SYSCALL_CANCEL (write, fd, buf, nbytes);
+  return syscall_write(fd, buf, nbytes);
 }
+__thread weak_variable ssize_t (* syscall_write)(int,const void *,size_t) = default_syscall_write;
+
 libc_hidden_def (__libc_write)
 
 weak_alias (__libc_write, __write)
