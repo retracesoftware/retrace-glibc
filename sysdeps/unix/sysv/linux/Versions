@@ -8,6 +8,9 @@ libc {
     syscall_close;
     default_syscall_close;
 
+    syscall_read;
+    default_syscall_read;
+
     # functions used in inline functions or macros
     __cmsg_nxthdr;
 

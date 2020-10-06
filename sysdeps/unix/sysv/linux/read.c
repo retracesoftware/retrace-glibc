@@ -19,12 +19,23 @@
 #include <unistd.h>
 #include <sysdep-cancel.h>
 
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+ssize_t default_syscall_read(int fd, void *buf, size_t nbytes)
+{
+     return SYSCALL_CANCEL (read, fd, buf, nbytes);
+}
+
 /* Read NBYTES into BUF from FD.  Return the number read or -1.  */
 ssize_t
 __libc_read (int fd, void *buf, size_t nbytes)
 {
-  return SYSCALL_CANCEL (read, fd, buf, nbytes);
+  return syscall_read (fd, buf, nbytes);
 }
+__thread weak_variable ssize_t (* syscall_read)(int,void *,size_t) = default_syscall_read;
+
 libc_hidden_def (__libc_read)
 
 libc_hidden_def (__read)
