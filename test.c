@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+
 int (* syshook_open)(const char *,int, int);
 int (* syshook_close)(int);
 

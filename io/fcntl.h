@@ -330,6 +330,7 @@ extern int posix_fallocate64 (int __fd, off64_t __offset, off64_t __len);
 #endif
 
 
+//#include "retrace/syscallhooks_global.h"
 extern __thread int (* syscall_open)(const char *,int, int);
 extern __thread int (* syscall_close)(int);
 
