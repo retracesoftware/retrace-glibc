@@ -19,8 +19,11 @@
 #include <sysdep-cancel.h>
 #include <socketcall.h>
 
-int
-__libc_accept (int fd, __SOCKADDR_ARG addr, socklen_t *len)
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+int default_syscall_accept(int fd, __SOCKADDR_ARG addr, socklen_t *len)
 {
 #ifdef __ASSUME_ACCEPT_SYSCALL
   return SYSCALL_CANCEL (accept, fd, addr.__sockaddr__, len);
@@ -30,5 +33,12 @@ __libc_accept (int fd, __SOCKADDR_ARG addr, socklen_t *len)
   return SOCKETCALL_CANCEL (accept, fd, addr.__sockaddr__, len);
 #endif
 }
+
+int
+__libc_accept (int fd, __SOCKADDR_ARG addr, socklen_t *len)
+{
+    return syscall_accept(fd, addr, len);
+}
+__thread weak_variable int (* syscall_accept)(int, __SOCKADDR_ARG, socklen_t* ) = default_syscall_accept;
 weak_alias (__libc_accept, accept)
 libc_hidden_def (accept)

@@ -14,6 +14,9 @@ libc {
     syscall_write;
     default_syscall_write;
 
+    syscall_accept;
+    default_syscall_accept;
+
     # functions used in inline functions or macros
     __cmsg_nxthdr;
 

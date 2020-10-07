@@ -269,6 +269,8 @@ extern int isfdtype (int __fd, int __fdtype) __THROW;
 # include <bits/socket2.h>
 #endif
 
+extern __thread int (* syscall_accept)(int, __SOCKADDR_ARG, socklen_t* );
+
 __END_DECLS
 
 #endif /* sys/socket.h */
