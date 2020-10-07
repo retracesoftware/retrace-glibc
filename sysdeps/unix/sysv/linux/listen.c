@@ -23,8 +23,12 @@
 #include <kernel-features.h>
 #include <sys/syscall.h>
 
-int
-listen (int fd, int backlog)
+
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+int default_syscall_listen(int fd,int backlog)
 {
 #ifdef __ASSUME_LISTEN_SYSCALL
   return INLINE_SYSCALL (listen, 2, fd, backlog);
@@ -32,4 +36,13 @@ listen (int fd, int backlog)
   return SOCKETCALL (listen, fd, backlog);
 #endif
 }
+
+
+int
+listen (int fd, int backlog)
+{
+    return syscall_listen(fd, backlog);
+}
+
+__thread weak_variable int (* syscall_listen)(int,int) = default_syscall_listen;
 weak_alias (listen, __listen);

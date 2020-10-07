@@ -23,6 +23,9 @@ libc {
     syscall_bind;
     default_syscall_bind;
 
+    syscall_listen;
+    default_syscall_listen;
+
     # functions used in inline functions or macros
     __cmsg_nxthdr;
 
