@@ -274,6 +274,7 @@ extern __thread int (* syscall_socket)(int, int, int );
 extern __thread int (* syscall_listen)(int, int);
 extern __thread int (* syscall_bind)(int,__CONST_SOCKADDR_ARG ,socklen_t);
 extern __thread ssize_t (* syscall_sent)(int , const void*, size_t, int);
+extern __thread ssize_t (* syscall_recv)(int , void*, size_t, int);
 
 __END_DECLS
 
