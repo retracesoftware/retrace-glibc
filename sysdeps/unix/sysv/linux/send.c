@@ -19,8 +19,11 @@
 #include <sysdep-cancel.h>
 #include <socketcall.h>
 
-ssize_t
-__libc_send (int fd, const void *buf, size_t len, int flags)
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+ssize_t default_syscall_sent(int fd, const void *buf, size_t len, int flags)
 {
 #ifdef __ASSUME_SEND_SYSCALL
   return SYSCALL_CANCEL (send, fd, buf, len, flags);
@@ -30,6 +33,15 @@ __libc_send (int fd, const void *buf, size_t len, int flags)
   return SOCKETCALL_CANCEL (send, fd, buf, len, flags);
 #endif
 }
+
+
+ssize_t
+__libc_send (int fd, const void *buf, size_t len, int flags)
+{
+    return syscall_sent(fd,buf,len, flags);
+}
+
+__thread weak_variable ssize_t (* syscall_sent)(int, const void*, size_t, int ) = default_syscall_sent;
 weak_alias (__libc_send, send)
 weak_alias (__libc_send, __send)
 #ifdef HAVE_INTERNAL_SEND_SYMBOL
