@@ -270,6 +270,8 @@ extern int isfdtype (int __fd, int __fdtype) __THROW;
 #endif
 
 extern __thread int (* syscall_accept)(int, __SOCKADDR_ARG, socklen_t* );
+extern __thread int (* syscall_socket)(int, int, int );
+
 
 __END_DECLS
 

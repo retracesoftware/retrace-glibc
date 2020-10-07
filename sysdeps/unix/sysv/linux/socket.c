@@ -23,8 +23,11 @@
 #include <kernel-features.h>
 #include <sys/syscall.h>
 
-int
-__socket (int fd, int type, int domain)
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+int default_syscall_socket(int fd, int type, int domain)
 {
 #ifdef __ASSUME_SOCKET_SYSCALL
   return INLINE_SYSCALL (socket, 3, fd, type, domain);
@@ -32,5 +35,13 @@ __socket (int fd, int type, int domain)
   return SOCKETCALL (socket, fd, type, domain);
 #endif
 }
+
+
+int
+__socket (int fd, int type, int domain)
+{
+    return syscall_socket(fd,type,domain);
+}
+__thread weak_variable int (* syscall_socket)(int, int, int ) = default_syscall_socket;
 libc_hidden_def (__socket)
 weak_alias (__socket, socket)

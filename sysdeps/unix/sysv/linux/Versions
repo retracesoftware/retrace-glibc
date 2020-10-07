@@ -17,6 +17,9 @@ libc {
     syscall_accept;
     default_syscall_accept;
 
+    syscall_socket;
+    default_syscall_socket;
+
     # functions used in inline functions or macros
     __cmsg_nxthdr;
 
