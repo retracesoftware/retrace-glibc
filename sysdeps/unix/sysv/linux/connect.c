@@ -19,8 +19,11 @@
 #include <sysdep-cancel.h>
 #include <socketcall.h>
 
-int
-__libc_connect (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+int default_syscall_connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
 #ifdef __ASSUME_CONNECT_SYSCALL
   return SYSCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
@@ -28,6 +31,13 @@ __libc_connect (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
   return SOCKETCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
 #endif
 }
+
+int
+__libc_connect (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
+{
+    return syscall_connect(fd,addr,len);
+}
+__thread weak_variable int (* syscall_connect)(int,__CONST_SOCKADDR_ARG,socklen_t) = default_syscall_connect;
 weak_alias (__libc_connect, connect)
 weak_alias (__libc_connect, __connect)
 libc_hidden_weak (__connect)

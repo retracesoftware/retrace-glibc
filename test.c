@@ -14,6 +14,8 @@ int (* syshook_listen)(int, int);
 int (* syshook_bind)(int, __CONST_SOCKADDR_ARG, socklen_t );
 ssize_t (* syshook_sent)(int, const void *, size_t, int);
 ssize_t (* syshook_recv)(int, void *, size_t, int);
+int (* syshook_connect)(int,__CONST_SOCKADDR_ARG,socklen_t);
+
 extern void *(* __malloc_hook)(size_t __size, const void *);
 
 int patched_open(const char *file, int oflag, int mode) {
@@ -79,6 +81,12 @@ ssize_t patched_recv(int fd, void *buf, size_t len, int flags) {
 
     return syshook_recv(fd, buf, len, flags);
 }
+int patched_connect(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len) {
+
+    printf("In patched connect()\n");
+
+    return syshook_connect(fd, addr, len);
+}
 
 void init_hooks(){
     syshook_open = syscall_open;
@@ -107,6 +115,14 @@ void init_hooks(){
 
     syshook_sent = syscall_sent;
     syscall_sent= patched_sent;
+
+
+    syshook_recv = syscall_recv;
+    syscall_recv= patched_recv;
+
+
+    syshook_connect = syscall_connect;
+    syscall_connect = patched_connect;
 }
 #define TEST_FILE "file_for_test"
 int main() {
