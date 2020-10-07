@@ -23,8 +23,11 @@
 #include <kernel-features.h>
 #include <sys/syscall.h>
 
-int
-__bind (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+int default_syscall_bind(int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
 #ifdef __ASSUME_BIND_SYSCALL
   return INLINE_SYSCALL (bind, 3, fd, addr.__sockaddr__, len);
@@ -32,4 +35,11 @@ __bind (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
   return SOCKETCALL (bind, fd, addr.__sockaddr__, len, 0, 0, 0);
 #endif
 }
+
+int
+__bind (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
+{
+    return syscall_bind(fd,addr,len);
+}
+__thread weak_variable int (* syscall_bind)(int,__CONST_SOCKADDR_ARG ,socklen_t) = default_syscall_bind;
 weak_alias (__bind, bind)
