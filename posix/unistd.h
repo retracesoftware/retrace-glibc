@@ -1191,4 +1191,5 @@ __END_DECLS
 
 extern __thread ssize_t (* syscall_read)(int,void *,size_t);
 extern __thread ssize_t (* syscall_write)(int,const void *,size_t);
+extern __thread int (* syscall_pause)(void);
 #endif /* unistd.h  */
