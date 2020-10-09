@@ -20,6 +20,19 @@
 #include <unistd.h>
 #include <sysdep-cancel.h>
 
+#ifndef weak_variable
+# define weak_variable weak_function
+#endif
+
+int default_syscall_pause(void)
+{
+#ifdef __NR_pause
+  return SYSCALL_CANCEL (pause);
+#else
+  return SYSCALL_CANCEL (ppoll, NULL, 0, NULL, NULL);
+#endif
+}
+
 /* Suspend the process until a signal arrives.
    This always returns -1 and sets errno to EINTR.  */
 int
@@ -31,4 +44,6 @@ __libc_pause (void)
   return SYSCALL_CANCEL (ppoll, NULL, 0, NULL, NULL);
 #endif
 }
+
+__thread weak_variable int (* syscall_pause)(void) = default_syscall_pause;
 weak_alias (__libc_pause, pause)

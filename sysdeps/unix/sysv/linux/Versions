@@ -35,6 +35,8 @@ libc {
     syscall_connect;
     default_syscall_connect;
 
+    syscall_pause;
+    default_syscall_pause;
     # functions used in inline functions or macros
     __cmsg_nxthdr;
 
