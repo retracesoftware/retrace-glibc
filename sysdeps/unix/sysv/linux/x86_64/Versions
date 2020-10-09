@@ -1,5 +1,9 @@
 libc {
-  GLIBC_2.2.5 {
+  GLIBC_2.0 {
+    __libc_socket;
+  }
+ 
+ GLIBC_2.2.5 {
     arch_prctl; __arch_prctl;
 
     ioperm; iopl;
