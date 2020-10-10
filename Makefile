@@ -70,7 +70,7 @@ endif # $(AUTOCONF) = no
 
 headers := limits.h values.h features.h gnu-versions.h \
 	   bits/xopen_lim.h gnu/libc-version.h stdc-predef.h \
-	   bits/libc-header-start.h
+	   bits/libc-header-start.h syshooks.h
 
 echo-headers: subdir_echo-headers
 
